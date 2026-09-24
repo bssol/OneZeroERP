@@ -1,0 +1,11 @@
+@using OneZeroErp.Application
+
+<article class="metric-card metric-card--@Metric.Tone">
+    <span class="metric-card__label">@Metric.Label</span>
+    <strong>@Metric.Value</strong>
+    <span class="metric-card__comparison"><span class="trend trend--@Metric.Trend">●</span> @Metric.Comparison</span>
+</article>
+
+@code {
+    [Parameter, EditorRequired] public DashboardMetric Metric { get; set; } = default!;
+}

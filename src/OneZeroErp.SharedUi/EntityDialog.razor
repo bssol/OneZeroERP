@@ -1,0 +1,16 @@
+@if (Open)
+{
+    <div class="entity-dialog-backdrop" role="presentation">
+        <section class="entity-dialog" role="dialog" aria-modal="true" aria-labelledby="entity-dialog-title">
+            <div class="entity-dialog__heading"><h2 id="entity-dialog-title">@Title</h2><button class="icon-button" type="button" aria-label="Close dialog" @onclick="Close">×</button></div>
+            @ChildContent
+        </section>
+    </div>
+}
+
+@code {
+    [Parameter] public bool Open { get; set; }
+    [Parameter] public string Title { get; set; } = "Edit item";
+    [Parameter, EditorRequired] public RenderFragment ChildContent { get; set; } = default!;
+    [Parameter] public EventCallback Close { get; set; }
+}

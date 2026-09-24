@@ -1,0 +1,59 @@
+@inherits LayoutComponentBase
+@inject IModuleRegistry ModuleRegistry
+@inject IThemeService ThemeService
+@inject IJSRuntime JS
+
+<div class="app-shell @(SidebarCollapsed ? "sidebar-collapsed" : string.Empty) @(MobileNavOpen ? "nav-open" : string.Empty)">
+    <aside class="sidebar" aria-label="Primary navigation">
+        <div class="brand"><span class="brand-mark">0Z</span><span class="brand-label">OneZero <small>ERP</small></span></div>
+        <button class="mobile-sidebar-close" type="button" aria-label="Close navigation" @onclick="ToggleMobileNavigation">×</button>
+        <nav class="sidebar-nav">
+            <a class="nav-item" href="/" title="Overview"><span>⌂</span><span class="nav-label">Overview</span></a>
+            <div class="nav-section-label">Modules</div>
+            @foreach (var module in ModuleRegistry.GetModules().Where(x => x.IsImplemented))
+            {
+                <a class="nav-item" href="@module.Route" title="@module.Name"><span>@module.Icon</span><span class="nav-label">@module.Name</span></a>
+            }
+            <div class="nav-section-label">Workspace</div>
+            <a class="nav-item" href="/modules/admin" title="Administration"><span>⚙</span><span class="nav-label">Administration</span></a>
+        </nav>
+        <div class="sidebar-footer"><span class="status-dot"></span><span class="sidebar-footer-label">All systems operational</span></div>
+    </aside>
+    <main class="main-area">
+        <header class="topbar">
+            <button class="sidebar-toggle" type="button" aria-label="@(SidebarCollapsed ? "Expand sidebar" : "Collapse sidebar")" aria-expanded="@(!SidebarCollapsed)" title="@(SidebarCollapsed ? "Expand sidebar" : "Collapse sidebar")" @onclick="ToggleSidebar"><span aria-hidden="true">@(SidebarCollapsed ? "»" : "«")</span></button>
+            <button class="mobile-menu" type="button" aria-label="@(MobileNavOpen ? "Close navigation" : "Open navigation")" aria-expanded="@MobileNavOpen" @onclick="ToggleMobileNavigation">☰</button>
+            <div class="breadcrumbs"><a href="/">OneZero ERP</a><span>/</span><span>Workspace</span></div>
+            <div class="topbar-actions">
+                <button class="icon-button" aria-label="Notifications">♢<span class="notification-dot"></span></button>
+                <label class="theme-picker">Theme <select aria-label="Select theme" @onchange="ChangeTheme">@foreach (var theme in ThemeService.Themes) { <option value="@theme.Key">@theme.Name</option> }</select></label>
+                <AuthorizeView><Authorized><details class="profile-menu"><summary><UserAvatar ImageUrl="PictureUrl(context.User)" Initials="@Initials" AriaLabel="Current user profile" /><span class="profile-name">@context.User.Identity?.Name</span></summary><div class="profile-popover"><div class="profile-role">@context.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value</div><form method="post" action="/account/logout"><AntiforgeryToken /><button type="submit" class="logout-button">Sign out</button></form></div></details></Authorized></AuthorizeView>
+            </div>
+        </header>
+        <div class="content-wrap">@Body</div>
+    </main>
+</div>
+@code {
+    private bool SidebarCollapsed;
+    private bool MobileNavOpen;
+    private string Initials => "AD";
+    private static string? PictureUrl(System.Security.Claims.ClaimsPrincipal user) => user.FindFirst("picture")?.Value;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            SidebarCollapsed = await JS.InvokeAsync<bool>("oneZeroShell.getCollapsed", false);
+            StateHasChanged();
+        }
+    }
+
+    private async Task ToggleSidebar()
+    {
+        SidebarCollapsed = !SidebarCollapsed;
+        await JS.InvokeVoidAsync("oneZeroShell.setCollapsed", SidebarCollapsed);
+    }
+
+    private void ToggleMobileNavigation() => MobileNavOpen = !MobileNavOpen;
+    private async Task ChangeTheme(ChangeEventArgs args) => await ThemeService.SetThemeAsync(args.Value?.ToString() ?? "professional");
+}

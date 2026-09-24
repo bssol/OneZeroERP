@@ -1,0 +1,15 @@
+@using OneZeroErp.Application
+
+<article class="module-card @(Item.IsImplemented ? "module-card--active" : "module-card--planned")">
+    <div class="module-card__icon" aria-hidden="true">@Item.Icon</div>
+    <div class="module-card__body">
+        <div class="eyebrow">@(Item.IsImplemented ? "Available" : "Planned")</div>
+        <h3>@Item.Name</h3>
+        <p>@Item.Description</p>
+        <a class="text-link" href="@Item.Route">@(Item.IsImplemented ? "Open workspace" : "View placeholder") <span aria-hidden="true">→</span></a>
+    </div>
+</article>
+
+@code {
+    [Parameter, EditorRequired] public ModuleNavigationItem Item { get; set; } = default!;
+}

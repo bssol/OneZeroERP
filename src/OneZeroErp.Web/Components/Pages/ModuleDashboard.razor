@@ -1,0 +1,8 @@
+@page "/modules/{ModuleKey}"
+@attribute [Authorize]
+@inject IDashboardService DashboardService
+@using OneZeroErp.SharedUi
+
+<PageTitle>@Dashboard?.Title · OneZero ERP</PageTitle>
+@if (Dashboard is null) { <section class="state-page"><div class="loading-spinner"></div><p>Loading workspace…</p></section> } else { <section class="page-heading"><div><div class="eyebrow">Module workspace</div><h1>@Dashboard.Title</h1><p class="page-subtitle">@Dashboard.Description</p></div></section><div class="metric-grid">@foreach (var metric in Dashboard.Metrics) { <MetricCard Metric="metric" /> }</div><div class="dashboard-grid"><section class="panel panel--wide"><div class="panel-heading"><div><div class="eyebrow">Workspace map</div><h2>Coming into focus</h2></div></div><div class="placeholder-chart"><span class="placeholder-line"></span><strong>@Dashboard.ChartPlaceholders.FirstOrDefault("Module activity chart")</strong><small>Visualization will be connected when this module is implemented.</small></div></section><section class="panel"><div class="panel-heading"><div><div class="eyebrow">Next steps</div><h2>Quick actions</h2></div></div><div class="action-list">@foreach (var action in Dashboard.QuickActions) { <a class="action-item action-item--@action.Tone" href="@action.Route"><span class="action-icon">＋</span><span><strong>@action.Title</strong><small>@action.Description</small></span></a>}</div></section></div> }
+@code { [Parameter] public string ModuleKey { get; set; } = ""; private ModuleDashboardModel? Dashboard; protected override void OnParametersSet() { try { Dashboard = DashboardService.GetModuleDashboard(ModuleKey); } catch (KeyNotFoundException) { Dashboard = null; } } }

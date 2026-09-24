@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <base href="/" />
+    <ResourcePreloader />
+    <link rel="stylesheet" href="@Assets["app.css"]" />
+    <link rel="stylesheet" href="@Assets["OneZeroErp.Web.styles.css"]" />
+    <link rel="stylesheet" href="theme.css" />
+    <link rel="stylesheet" href="sidebar.css" />
+    <link rel="stylesheet" href="crud.css" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="icons/icon-192.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="icons/icon-192.svg" />
+    <meta name="theme-color" content="#3146a8" />
+    <ImportMap />
+    <HeadOutlet />
+</head>
+
+<body>
+    <Routes @rendermode="InteractiveServer" />
+    <ReconnectModal />
+    <script src="@Assets["_framework/blazor.web.js"]"></script>
+    <script src="theme.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) { navigator.serviceWorker.register('service-worker.js'); }
+    </script>
+</body>
+
+</html>

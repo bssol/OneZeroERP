@@ -1,0 +1,71 @@
+.sidebar-toggle {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 20px;
+    line-height: 1;
+}
+
+.sidebar-toggle:hover { color: var(--primary); border-color: var(--primary); }
+.mobile-menu { display: none; }
+.mobile-sidebar-close { display: none; }
+.sidebar-collapsed .sidebar { width: 72px; flex-basis: 72px; padding-inline: 10px; }
+.sidebar-collapsed .brand { justify-content: center; padding-inline: 0; }
+.sidebar-collapsed .brand-label,
+.sidebar-collapsed .nav-label,
+.sidebar-collapsed .nav-section-label,
+.sidebar-collapsed .sidebar-footer-label { display: none; }
+.sidebar-collapsed .nav-item { justify-content: center; padding-inline: 8px; }
+.sidebar-collapsed .nav-item span:first-child { width: auto; }
+.sidebar-collapsed .sidebar-footer { text-align: center; padding-inline: 0; }
+.sidebar-collapsed .status-dot { margin-right: 0; }
+
+.nav-open::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, .38);
+    z-index: 4;
+}
+
+.nav-open .sidebar { box-shadow: 12px 0 30px rgba(15, 23, 42, .18); }
+
+@media (max-width: 760px) {
+    .sidebar-toggle { display: none; }
+    .mobile-menu { display: grid; place-items: center; }
+    .mobile-sidebar-close {
+        display: grid;
+        place-items: center;
+        position: absolute;
+        top: 20px;
+        right: 16px;
+        width: 32px;
+        height: 32px;
+        border: 0;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, .1);
+        color: var(--sidebar-text);
+        font-size: 24px;
+        cursor: pointer;
+    }
+    .sidebar-collapsed .sidebar {
+        width: 250px;
+        flex-basis: 250px;
+        padding: 24px 14px;
+    }
+    .sidebar-collapsed .brand { justify-content: flex-start; padding-inline: 12px; }
+    .sidebar-collapsed .brand-label,
+    .sidebar-collapsed .nav-label,
+    .sidebar-collapsed .nav-section-label,
+    .sidebar-collapsed .sidebar-footer-label { display: inline; }
+    .sidebar-collapsed .nav-item { justify-content: flex-start; padding-inline: 12px; }
+    .sidebar-collapsed .nav-item span:first-child { width: 20px; }
+    .sidebar-collapsed .sidebar-footer { text-align: left; padding-inline: 10px; }
+    .sidebar-collapsed .status-dot { margin-right: 7px; }
+}

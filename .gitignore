@@ -1,0 +1,9 @@
+**/bin/
+**/obj/
+.keys/
+src/OneZeroErp.Web/.keys/
+*.user
+*.suo
+
+.vs/
+.codex/

@@ -1,0 +1,10 @@
+@page "/"
+@attribute [Authorize]
+@inject IDashboardService DashboardService
+@using OneZeroErp.SharedUi
+
+<PageTitle>Overview · OneZero ERP</PageTitle>
+<section class="page-heading"><div><div class="eyebrow">Tuesday, 23 September 2026</div><h1>Good morning, Administrator</h1><p class="page-subtitle">Here is the operational pulse across your ERP workspace.</p></div><div class="heading-actions"><button class="button button--primary" disabled>＋ Create action</button></div></section>
+<div class="metric-grid">@foreach (var metric in Dashboard.Metrics) { <MetricCard Metric="metric" /> }</div>
+<div class="dashboard-grid"><section class="panel panel--wide"><div class="panel-heading"><div><div class="eyebrow">Your workspace</div><h2>Module access</h2></div><span class="panel-caption">@Dashboard.Modules.Count(x => x.IsImplemented) active · @Dashboard.Modules.Count(x => !x.IsImplemented) planned</span></div><div class="module-grid">@foreach (var module in Dashboard.Modules) { <ModuleCard Item="module" /> }</div></section><section class="panel"><div class="panel-heading"><div><div class="eyebrow">Attention</div><h2>Pending actions</h2></div></div><div class="action-list">@foreach (var action in Dashboard.PendingActions) { <a class="action-item action-item--@action.Tone" href="@action.Route"><span class="action-icon">!</span><span><strong>@action.Title</strong><small>@action.Description</small></span><span>›</span></a>}</div></section><section class="panel"><div class="panel-heading"><div><div class="eyebrow">Activity</div><h2>Recently accessed</h2></div></div><div class="activity-list">@foreach (var activity in Dashboard.RecentActivity) { <div class="activity-item"><span class="activity-dot activity-dot--@activity.Tone"></span><span><strong>@activity.Title</strong><small>@activity.Detail · @activity.Timestamp</small></span></div>}</div></section></div>
+@code { private ApplicationDashboardModel Dashboard = default!; protected override void OnInitialized() => Dashboard = DashboardService.GetApplicationDashboard(); }

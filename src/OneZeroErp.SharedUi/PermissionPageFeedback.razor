@@ -1,0 +1,11 @@
+@if (IsDeleteConfirmationOpen)
+{
+    <div class="entity-dialog-backdrop" role="presentation"><section class="entity-dialog" role="dialog" aria-modal="true" aria-labelledby="delete-dialog-title"><h2 id="delete-dialog-title">Confirm deletion</h2><p>@DeleteConfirmationMessage</p><div class="entity-dialog__actions"><button class="button button--secondary" type="button" @onclick="CancelDelete">Cancel</button><button class="button button--danger" type="button" @onclick="ConfirmDelete">Delete</button></div></section></div>
+}
+
+@code {
+    [Parameter] public bool IsDeleteConfirmationOpen { get; set; }
+    [Parameter] public string DeleteConfirmationMessage { get; set; } = "Are you sure?";
+    [Parameter] public EventCallback CancelDelete { get; set; }
+    [Parameter] public EventCallback ConfirmDelete { get; set; }
+}

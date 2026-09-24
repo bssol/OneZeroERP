@@ -1,0 +1,19 @@
+<div class="user-avatar" role="img" aria-label="@AriaLabel">
+    @if (!string.IsNullOrWhiteSpace(ImageUrl) && !imageFailed)
+    {
+        <img src="@ImageUrl" alt="@AriaLabel" @onerror="HandleImageError" />
+    }
+    else
+    {
+        <span>@Initials</span>
+    }
+</div>
+
+@code {
+    [Parameter] public string? ImageUrl { get; set; }
+    [Parameter] public string Initials { get; set; } = "U";
+    [Parameter] public string AriaLabel { get; set; } = "User avatar";
+    private bool imageFailed;
+    protected override void OnParametersSet() => imageFailed = false;
+    private void HandleImageError() => imageFailed = true;
+}
