@@ -24,7 +24,9 @@ public sealed class DatabaseInitializer(ErpDbContext db, IConfiguration configur
 								"gl.chart-of-accounts:CanEdit",
 								"gl.voucher-types:CanView",
 								"gl.voucher-types:CanAdd",
-								"gl.voucher-types:CanEdit"
+								"gl.voucher-types:CanEdit",
+								"gl.day-locks:CanView",
+								"gl.day-locks:CanEdit"
 						]),
 				new(
 						"fiscal.manager",
@@ -37,7 +39,9 @@ public sealed class DatabaseInitializer(ErpDbContext db, IConfiguration configur
 								"gl.fiscal-years:CanEdit",
 								"gl.fiscal-years:CanDelete",
 								"gl.chart-of-accounts:CanView",
-								"gl.voucher-types:CanView"
+								"gl.voucher-types:CanView",
+								"gl.day-locks:CanView",
+								"gl.day-locks:CanEdit"
 						]),
 				new(
 						"gl.accountant",
@@ -51,7 +55,8 @@ public sealed class DatabaseInitializer(ErpDbContext db, IConfiguration configur
 								"gl.chart-of-accounts:CanEdit",
 								"gl.voucher-types:CanView",
 								"gl.voucher-types:CanAdd",
-								"gl.voucher-types:CanEdit"
+								"gl.voucher-types:CanEdit",
+								"gl.day-locks:CanView"
 						]),
 				new(
 						"gl.viewer",
@@ -61,7 +66,8 @@ public sealed class DatabaseInitializer(ErpDbContext db, IConfiguration configur
 						[
 								"gl.fiscal-years:CanView",
 								"gl.chart-of-accounts:CanView",
-								"gl.voucher-types:CanView"
+								"gl.voucher-types:CanView",
+								"gl.day-locks:CanView"
 						])
 	];
 

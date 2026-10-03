@@ -1,0 +1,70 @@
+@page "/gl/day-locks"
+@attribute [Authorize]
+@inject IDayLockService DayLockService
+@inject IConfiguration Configuration
+@using OneZeroErp.Application.GeneralLedger
+@using OneZeroErp.SharedUi
+
+<PermissionPagedPage TItem="DayLockListItem"
+                     Resource="gl.day-locks"
+                     Eyebrow="General Ledger"
+                     Title="Accounting Day Locks"
+                     Description="Control the dates on which financial transactions may be entered or changed."
+                     ShowCreateAction="false"
+                     NewEntityTitle="Accounting day"
+                     EditEntityTitle="Accounting day"
+                     EmptyMessage="Fiscal year dates will appear here after a fiscal year is created."
+                     ShowDeleteAction="false"
+                     LoadPage="LoadPageAsync"
+                     DeleteItem="DeleteItemAsync"
+                     CreateRequested="BeginCreate"
+                     EditRequested="BeginEdit">
+    <HeaderTemplate><th scope="col">Fiscal year</th><th scope="col">Date</th><th scope="col">Status</th><th scope="col">Last lock action</th></HeaderTemplate>
+    <RowTemplate Context="day"><td><strong>@day.FiscalYearCode</strong></td><td>@day.Date.ToString("dd MMM yyyy")</td><td><span class="status-pill status-pill--@(day.IsLocked ? "closed" : "open")">@(day.IsLocked ? "Locked" : "Open")</span></td><td>@(day.LockedAtUtc?.ToLocalTime().ToString("dd MMM yyyy HH:mm") ?? "—")</td></RowTemplate>
+    <EditorTemplate Context="pageContext">
+        <EditForm Model="@EditModel" OnValidSubmit="@(() => SaveAsync(pageContext))" Context="editContext">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+            <div class="form-grid">
+                <label>Fiscal year<input value="@EditModel.FiscalYearCode" readonly /></label>
+                <label>Date<input value="@EditModel.Date.ToString("dd MMM yyyy")" readonly /></label>
+                <label class="checkbox-field form-grid__full"><InputCheckbox @bind-Value="EditModel.IsLocked" /> Lock this accounting day</label>
+            </div>
+            <p class="form-hint">Locking prevents financial mutations for this date. Unlock only when a controlled correction is required.</p>
+            <div class="entity-dialog__actions"><button class="button button--secondary" type="button" @onclick="pageContext.CloseEditor">Cancel</button><button class="button button--primary" type="submit">Save day lock</button></div>
+        </EditForm>
+    </EditorTemplate>
+</PermissionPagedPage>
+
+@code {
+    private DayLockEditModel EditModel { get; set; } = new();
+    private Guid DefaultCompanyId => Guid.TryParse(Configuration["Company:DefaultCompanyId"], out var companyId) ? companyId : Guid.Empty;
+
+    private Task<PageActionResult> BeginCreate() => Task.FromResult(PageActionResult.Failure("Accounting days are generated from fiscal years."));
+
+    private Task<PageActionResult> BeginEdit(DayLockListItem item)
+    {
+        EditModel = new()
+        {
+            Id = item.Id,
+            CompanyId = item.CompanyId,
+            FiscalYearId = item.FiscalYearId,
+            FiscalYearCode = item.FiscalYearCode,
+            Date = item.Date,
+            IsLocked = item.IsLocked
+        };
+        return Task.FromResult(PageActionResult.Success());
+    }
+
+    private Task<PageActionResult> SaveAsync(PermissionPagedPageContext<DayLockListItem> context) => context.SubmitAsync(async () =>
+    {
+        var result = await DayLockService.SaveAsync(EditModel, context.CurrentUserId);
+        return result.Succeeded ? PageActionResult.Success() : PageActionResult.Failure(result.ErrorMessage ?? "The accounting day lock could not be saved.");
+    });
+
+    private Task<PageActionResult> DeleteItemAsync(DayLockListItem item, Guid actorUserId, CancellationToken cancellationToken) =>
+        Task.FromResult(PageActionResult.Failure("Accounting days are managed by their fiscal year and cannot be deleted here."));
+
+    private Task<PagedResult<DayLockListItem>> LoadPageAsync(PagedQuery query, CancellationToken cancellationToken) =>
+        DayLockService.GetPageAsync(DefaultCompanyId, query, cancellationToken);
+}

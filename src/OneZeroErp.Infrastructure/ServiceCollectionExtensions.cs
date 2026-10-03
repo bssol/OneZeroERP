@@ -25,6 +25,7 @@ public static class ServiceCollectionExtensions
         services.AddDbContext<ErpDbContext>(options => options.UseSqlServer(connectionString));
         services.AddScoped<IUnitOfWork, EfUnitOfWork>();
         services.AddScoped<ISetupFiscalYearService, SetupFiscalYearService>();
+        services.AddScoped<IDayLockService, DayLockService>();
         services.AddScoped<IChartOfAccountService, ChartOfAccountService>();
         services.AddScoped<IVoucherTypeService, VoucherTypeService>();
         services.AddScoped<IAppUserStore, SqlAppUserStore>();
