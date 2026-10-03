@@ -28,6 +28,8 @@ public sealed record ChartOfAccountTreeItem(
 
 public sealed record ChartOfAccountNumberSuggestion(string? AccountNo, string? SuggestedTitle, bool RequiresParent);
 
+public sealed record ChartOfAccountImportResult(bool Succeeded, int ImportedCount, IReadOnlyList<string> Errors);
+
 public sealed class ChartOfAccountEditModel
 {
 	public Guid? Id { get; set; }
@@ -65,6 +67,7 @@ public interface IChartOfAccountService
 	Task<IReadOnlyList<ChartOfAccountParentOption>> GetParentOptionsAsync(AccountType accountType, Guid? excludeId = null, CancellationToken cancellationToken = default);
 	Task<IReadOnlyList<ChartOfAccountTreeItem>> GetParentTreeAsync(CancellationToken cancellationToken = default);
 	Task<ChartOfAccountNumberSuggestion> GetAccountNumberSuggestionAsync(AccountType accountType, string? parentAccountNo, bool isPostingAccount, Guid? excludeId = null, CancellationToken cancellationToken = default);
+	Task<ChartOfAccountImportResult> ImportCsvAsync(Stream csvStream, Guid actorUserId, CancellationToken cancellationToken = default);
 	Task<ChartOfAccountListItem?> GetAsync(Guid id, CancellationToken cancellationToken = default);
 	Task<ChartOfAccountOperationResult> SaveAsync(ChartOfAccountEditModel model, Guid actorUserId, CancellationToken cancellationToken = default);
 	Task<ChartOfAccountOperationResult> SetActiveAsync(Guid id, bool isActive, Guid actorUserId, CancellationToken cancellationToken = default);

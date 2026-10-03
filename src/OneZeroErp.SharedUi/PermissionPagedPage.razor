@@ -1,7 +1,7 @@
 @typeparam TItem
 @inherits PermissionPagedPageBase<TItem>
 
-<EntityPageHeader Eyebrow="@Eyebrow" Title="@Title" Description="@Description" CreateText="@CreateText" CanAdd="@Can(PermissionAction.CanAdd)" ShowCreateAction="@ShowCreateAction" CreateRequested="BeginCreateAsync" />
+<EntityPageHeader Eyebrow="@Eyebrow" Title="@Title" Description="@Description" CreateText="@CreateText" ImportText="@ImportText" CanAdd="@Can(PermissionAction.CanAdd)" ShowCreateAction="@ShowCreateAction" CreateRequested="BeginCreateAsync" ImportRequested="ImportRequested" />
 
 @if (!string.IsNullOrWhiteSpace(SuccessMessage))
 {
@@ -56,6 +56,7 @@ else
     [Parameter, EditorRequired] public string Title { get; set; } = string.Empty;
     [Parameter, EditorRequired] public string Description { get; set; } = string.Empty;
     [Parameter] public string CreateText { get; set; } = "Create";
+    [Parameter] public string ImportText { get; set; } = string.Empty;
     [Parameter] public bool ShowCreateAction { get; set; } = true;
     [Parameter] public bool ShowEditAction { get; set; } = true;
     [Parameter] public bool ShowDeleteAction { get; set; } = true;
@@ -67,6 +68,7 @@ else
     [Parameter, EditorRequired] public Func<PagedQuery, CancellationToken, Task<PagedResult<TItem>>> LoadPage { get; set; } = default!;
     [Parameter, EditorRequired] public Func<TItem, Guid, CancellationToken, Task<PageActionResult>> DeleteItem { get; set; } = default!;
     [Parameter, EditorRequired] public Func<Task<PageActionResult>> CreateRequested { get; set; } = default!;
+    [Parameter] public EventCallback ImportRequested { get; set; }
     [Parameter, EditorRequired] public Func<TItem, Task<PageActionResult>> EditRequested { get; set; } = default!;
     [Parameter, EditorRequired] public RenderFragment HeaderTemplate { get; set; } = default!;
     [Parameter, EditorRequired] public RenderFragment<TItem> RowTemplate { get; set; } = default!;
@@ -84,6 +86,8 @@ else
     protected override string PermissionResource => Resource;
     protected override Task<PagedResult<TItem>> LoadEntitiesAsync(PagedQuery query, CancellationToken cancellationToken = default) => LoadPage(query, cancellationToken);
     protected override Task<PageActionResult> DeleteEntityAsync(TItem entity, CancellationToken cancellationToken = default) => DeleteItem(entity, CurrentUserId, cancellationToken);
+
+    public Task ReloadAsync() => RefreshAsync(PageResult?.PageNumber ?? 1);
 
     private async Task BeginCreateAsync()
     {

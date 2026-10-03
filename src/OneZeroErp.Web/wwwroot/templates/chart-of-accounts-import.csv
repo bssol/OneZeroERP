@@ -1,0 +1,10 @@
+AccountType,ParentAccountNo,Title,Description,IsPostingAccount,IsActive
+Asset,,Assets,Root asset account,false,true
+Asset,100000000,Cash and equivalents,Current asset group,false,true
+Asset,100000001,Cash on hand,Physical cash,true,true
+Asset,100000001,Bank accounts,Bank balances,true,true
+Liability,,Liabilities,Root liability account,false,true
+Liability,200000000,Accounts payable,Amounts owed to suppliers,true,true
+Equity,,Equity,Root equity account,false,true
+Revenue,,Revenue,Root revenue account,false,true
+Expense,,Expenses,Root expense account,false,true
