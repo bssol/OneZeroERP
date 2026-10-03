@@ -130,21 +130,33 @@ public sealed class DatabaseInitializer(ErpDbContext db, IConfiguration configur
 
 	private async Task SeedDevelopmentUserAsync(CancellationToken cancellationToken)
 	{
+		var hasNewUsers = false;
 		foreach (var seedUser in DevelopmentUsers)
 		{
 			var password = GetConfiguredPassword(seedUser.PasswordConfigurationKey);
 			if (string.IsNullOrWhiteSpace(password))
 				continue;
 
-			var existingUser = await db.AppUsers.Include(x => x.Permissions).SingleOrDefaultAsync(x => x.UserName == seedUser.UserName, cancellationToken);
+			var existingUser = await db.AppUsers.AsNoTracking().SingleOrDefaultAsync(x => x.UserName == seedUser.UserName, cancellationToken);
 			if (existingUser is not null)
 			{
-				var existingPermissions = existingUser.Permissions.Select(x => x.Permission).ToHashSet(StringComparer.OrdinalIgnoreCase);
-				foreach (var permission in seedUser.Permissions.Where(permission => !existingPermissions.Contains(permission)))
-					existingUser.Permissions.Add(new AppUserPermissionEntity { Id = Guid.NewGuid(), Permission = permission });
+				foreach (var permission in seedUser.Permissions)
+				{
+					await db.Database.ExecuteSqlInterpolatedAsync($"""
+						IF NOT EXISTS
+						(
+							SELECT 1
+							FROM [identity].[Identity_AppUserPermissions]
+							WHERE [AppUserId] = {existingUser.Id} AND [Permission] = {permission}
+						)
+						INSERT INTO [identity].[Identity_AppUserPermissions] ([Id], [AppUserId], [Permission])
+						VALUES (NEWID(), {existingUser.Id}, {permission});
+					""", cancellationToken);
+				}
 				continue;
 			}
 
+			hasNewUsers = true;
 			var now = clock.UtcNow;
 			db.AppUsers.Add(new AppUserEntity
 			{
@@ -164,7 +176,8 @@ public sealed class DatabaseInitializer(ErpDbContext db, IConfiguration configur
 			});
 		}
 
-		await db.SaveChangesAsync(cancellationToken);
+		if (hasNewUsers)
+			await db.SaveChangesAsync(cancellationToken);
 	}
 
 	private string? GetConfiguredPassword(string configurationKey)
