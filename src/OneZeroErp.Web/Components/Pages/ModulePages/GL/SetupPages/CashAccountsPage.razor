@@ -1,0 +1,70 @@
+@page "/gl/cash-accounts"
+@attribute [Authorize]
+@inject ICashAccountService CashAccountService
+@inject IConfiguration Configuration
+@using OneZeroErp.Application.GeneralLedger
+@using OneZeroErp.SharedUi
+
+<PermissionPagedPage TItem="CashAccountListItem"
+                     Resource="gl.cash-accounts"
+                     Eyebrow="General Ledger"
+                     Title="Cash Accounts"
+                     Description="Define physical cash locations and link them to active posting accounts in the general ledger."
+                     CreateText="New cash account"
+                     NewEntityTitle="New cash account"
+                     EditEntityTitle="Edit cash account"
+                     EmptyMessage="Create a cash account after adding an Asset posting account to the chart of accounts."
+                     ShowDeleteAction="false"
+                     LoadPage="LoadPageAsync"
+                     DeleteItem="DeleteItemAsync"
+                     CreateRequested="BeginCreate"
+                     EditRequested="BeginEdit">
+    <HeaderTemplate><th scope="col">Code</th><th scope="col">Cash account</th><th scope="col">GL account</th><th scope="col">Location</th><th scope="col">Status</th></HeaderTemplate>
+    <RowTemplate Context="cash"><td><strong>@cash.Code</strong></td><td>@cash.Name</td><td>@cash.GlAccountNo — @cash.GlAccountTitle</td><td>@cash.Location</td><td><span class="status-pill status-pill--@(cash.IsActive ? "open" : "closed")">@(cash.IsActive ? "Active" : "Inactive")</span></td></RowTemplate>
+    <EditorTemplate Context="pageContext">
+        <EditForm Model="@EditModel" OnValidSubmit="@(() => SaveAsync(pageContext))" Context="editContext">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+            <div class="form-grid">
+                <label>Code<InputText @bind-Value="EditModel.Code" placeholder="CASH-MAIN" /></label>
+                <label>GL posting account<InputSelect @bind-Value="EditModel.GlAccountId"><option value="@Guid.Empty">Select an Asset posting account</option>@foreach (var account in GlAccountOptions) { <option value="@account.Id">@account.AccountNo — @account.Title</option> }</InputSelect></label>
+                <label>Cash account name<InputText @bind-Value="EditModel.Name" placeholder="Main cash desk" /></label>
+                <label>Location<InputText @bind-Value="EditModel.Location" placeholder="Head office reception" /></label>
+                <label class="checkbox-field"><InputCheckbox @bind-Value="EditModel.IsActive" /> Active</label>
+            </div>
+            <p class="form-hint">Only active posting Asset accounts can be linked, and each GL account can have one cash link.</p>
+            <div class="entity-dialog__actions"><button class="button button--secondary" type="button" @onclick="pageContext.CloseEditor">Cancel</button><button class="button button--primary" type="submit">Save cash account</button></div>
+        </EditForm>
+    </EditorTemplate>
+</PermissionPagedPage>
+
+@code {
+    private CashAccountEditModel EditModel { get; set; } = new();
+    private IReadOnlyList<GlPostingAccountOption> GlAccountOptions { get; set; } = [];
+    private Guid DefaultCompanyId => Guid.TryParse(Configuration["Company:DefaultCompanyId"], out var companyId) ? companyId : Guid.Empty;
+
+    private async Task<PageActionResult> BeginCreate()
+    {
+        EditModel = new() { CompanyId = DefaultCompanyId };
+        GlAccountOptions = await CashAccountService.GetGlAccountOptionsAsync();
+        return PageActionResult.Success();
+    }
+
+    private async Task<PageActionResult> BeginEdit(CashAccountListItem item)
+    {
+        EditModel = new() { Id = item.Id, CompanyId = item.CompanyId, GlAccountId = item.GlAccountId, Code = item.Code, Name = item.Name, Location = item.Location, IsActive = item.IsActive };
+        GlAccountOptions = await CashAccountService.GetGlAccountOptionsAsync();
+        return PageActionResult.Success();
+    }
+
+    private Task<PageActionResult> SaveAsync(PermissionPagedPageContext<CashAccountListItem> context) => context.SubmitAsync(async () =>
+    {
+        var result = await CashAccountService.SaveAsync(EditModel, context.CurrentUserId);
+        return result.Succeeded ? PageActionResult.Success() : PageActionResult.Failure(result.ErrorMessage ?? "The cash account could not be saved.");
+    });
+
+    private Task<PageActionResult> DeleteItemAsync(CashAccountListItem item, Guid actorUserId, CancellationToken cancellationToken) =>
+        Task.FromResult(PageActionResult.Failure("Cash accounts are deactivated instead of deleted."));
+
+    private Task<PagedResult<CashAccountListItem>> LoadPageAsync(PagedQuery query, CancellationToken cancellationToken) => CashAccountService.GetPageAsync(DefaultCompanyId, query, cancellationToken);
+}

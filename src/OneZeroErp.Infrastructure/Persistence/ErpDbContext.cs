@@ -11,6 +11,8 @@ public sealed class ErpDbContext(DbContextOptions<ErpDbContext> options) : DbCon
 	public DbSet<Erp_LockDateEntity> LockDates => Set<Erp_LockDateEntity>();
 	public DbSet<GL_ChartOfAccountEntity> ChartOfAccounts => Set<GL_ChartOfAccountEntity>();
 	public DbSet<GL_VoucherTypeEntity> VoucherTypes => Set<GL_VoucherTypeEntity>();
+	public DbSet<GL_BankAccountEntity> BankAccounts => Set<GL_BankAccountEntity>();
+	public DbSet<GL_CashAccountEntity> CashAccounts => Set<GL_CashAccountEntity>();
 	public DbSet<AuditEventEntity> AuditEvents => Set<AuditEventEntity>();
 
 	protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -105,6 +107,37 @@ public sealed class ErpDbContext(DbContextOptions<ErpDbContext> options) : DbCon
 			entity.Property(x => x.CreatedAtUtc).IsRequired();
 			entity.Property(x => x.UpdatedAtUtc).IsRequired();
 			entity.HasIndex(x => new { x.CompanyId, x.Code }).IsUnique();
+		});
+		modelBuilder.Entity<GL_BankAccountEntity>(entity =>
+		{
+			entity.ToTable("Gl_Setup_BankAccounts", "gl");
+			entity.HasKey(x => x.Id);
+			entity.Property(x => x.CompanyId).IsRequired();
+			entity.Property(x => x.GlAccountId).IsRequired();
+			entity.Property(x => x.Code).HasMaxLength(30).IsRequired();
+			entity.Property(x => x.Name).HasMaxLength(160).IsRequired();
+			entity.Property(x => x.BankName).HasMaxLength(160).IsRequired();
+			entity.Property(x => x.AccountNumber).HasMaxLength(80).IsRequired();
+			entity.Property(x => x.IsActive).IsRequired();
+			entity.Property(x => x.CreatedAtUtc).IsRequired();
+			entity.Property(x => x.UpdatedAtUtc).IsRequired();
+			entity.HasIndex(x => new { x.CompanyId, x.Code }).IsUnique();
+			entity.HasIndex(x => new { x.CompanyId, x.GlAccountId }).IsUnique();
+		});
+		modelBuilder.Entity<GL_CashAccountEntity>(entity =>
+		{
+			entity.ToTable("Gl_Setup_CashAccounts", "gl");
+			entity.HasKey(x => x.Id);
+			entity.Property(x => x.CompanyId).IsRequired();
+			entity.Property(x => x.GlAccountId).IsRequired();
+			entity.Property(x => x.Code).HasMaxLength(30).IsRequired();
+			entity.Property(x => x.Name).HasMaxLength(160).IsRequired();
+			entity.Property(x => x.Location).HasMaxLength(160).IsRequired();
+			entity.Property(x => x.IsActive).IsRequired();
+			entity.Property(x => x.CreatedAtUtc).IsRequired();
+			entity.Property(x => x.UpdatedAtUtc).IsRequired();
+			entity.HasIndex(x => new { x.CompanyId, x.Code }).IsUnique();
+			entity.HasIndex(x => new { x.CompanyId, x.GlAccountId }).IsUnique();
 		});
 		modelBuilder.Entity<AuditEventEntity>(entity =>
 		{

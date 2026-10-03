@@ -1,0 +1,71 @@
+@page "/gl/bank-accounts"
+@attribute [Authorize]
+@inject IBankAccountService BankAccountService
+@inject IConfiguration Configuration
+@using OneZeroErp.Application.GeneralLedger
+@using OneZeroErp.SharedUi
+
+<PermissionPagedPage TItem="BankAccountListItem"
+                     Resource="gl.bank-accounts"
+                     Eyebrow="General Ledger"
+                     Title="Bank Accounts"
+                     Description="Link bank accounts to active posting accounts in the general ledger."
+                     CreateText="New bank account"
+                     NewEntityTitle="New bank account"
+                     EditEntityTitle="Edit bank account"
+                     EmptyMessage="Create a bank account after adding an Asset posting account to the chart of accounts."
+                     ShowDeleteAction="false"
+                     LoadPage="LoadPageAsync"
+                     DeleteItem="DeleteItemAsync"
+                     CreateRequested="BeginCreate"
+                     EditRequested="BeginEdit">
+    <HeaderTemplate><th scope="col">Code</th><th scope="col">Bank account</th><th scope="col">GL account</th><th scope="col">Account number</th><th scope="col">Status</th></HeaderTemplate>
+    <RowTemplate Context="bank"><td><strong>@bank.Code</strong></td><td>@bank.Name<br /><span class="table-secondary">@bank.BankName</span></td><td>@bank.GlAccountNo — @bank.GlAccountTitle</td><td>@bank.AccountNumber</td><td><span class="status-pill status-pill--@(bank.IsActive ? "open" : "closed")">@(bank.IsActive ? "Active" : "Inactive")</span></td></RowTemplate>
+    <EditorTemplate Context="pageContext">
+        <EditForm Model="@EditModel" OnValidSubmit="@(() => SaveAsync(pageContext))" Context="editContext">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+            <div class="form-grid">
+                <label>Code<InputText @bind-Value="EditModel.Code" placeholder="HBL-MAIN" /></label>
+                <label>GL posting account<InputSelect @bind-Value="EditModel.GlAccountId"><option value="@Guid.Empty">Select an Asset posting account</option>@foreach (var account in GlAccountOptions) { <option value="@account.Id">@account.AccountNo — @account.Title</option> }</InputSelect></label>
+                <label>Account name<InputText @bind-Value="EditModel.Name" placeholder="Main operating account" /></label>
+                <label>Bank name<InputText @bind-Value="EditModel.BankName" placeholder="Habib Bank Limited" /></label>
+                <label class="form-grid__full">Bank account number<InputText @bind-Value="EditModel.AccountNumber" placeholder="IBAN or account number" /></label>
+                <label class="checkbox-field"><InputCheckbox @bind-Value="EditModel.IsActive" /> Active</label>
+            </div>
+            <p class="form-hint">Only active posting Asset accounts can be linked, and each GL account can have one bank link.</p>
+            <div class="entity-dialog__actions"><button class="button button--secondary" type="button" @onclick="pageContext.CloseEditor">Cancel</button><button class="button button--primary" type="submit">Save bank account</button></div>
+        </EditForm>
+    </EditorTemplate>
+</PermissionPagedPage>
+
+@code {
+    private BankAccountEditModel EditModel { get; set; } = new();
+    private IReadOnlyList<GlPostingAccountOption> GlAccountOptions { get; set; } = [];
+    private Guid DefaultCompanyId => Guid.TryParse(Configuration["Company:DefaultCompanyId"], out var companyId) ? companyId : Guid.Empty;
+
+    private async Task<PageActionResult> BeginCreate()
+    {
+        EditModel = new() { CompanyId = DefaultCompanyId };
+        GlAccountOptions = await BankAccountService.GetGlAccountOptionsAsync();
+        return PageActionResult.Success();
+    }
+
+    private async Task<PageActionResult> BeginEdit(BankAccountListItem item)
+    {
+        EditModel = new() { Id = item.Id, CompanyId = item.CompanyId, GlAccountId = item.GlAccountId, Code = item.Code, Name = item.Name, BankName = item.BankName, AccountNumber = item.AccountNumber, IsActive = item.IsActive };
+        GlAccountOptions = await BankAccountService.GetGlAccountOptionsAsync();
+        return PageActionResult.Success();
+    }
+
+    private Task<PageActionResult> SaveAsync(PermissionPagedPageContext<BankAccountListItem> context) => context.SubmitAsync(async () =>
+    {
+        var result = await BankAccountService.SaveAsync(EditModel, context.CurrentUserId);
+        return result.Succeeded ? PageActionResult.Success() : PageActionResult.Failure(result.ErrorMessage ?? "The bank account could not be saved.");
+    });
+
+    private Task<PageActionResult> DeleteItemAsync(BankAccountListItem item, Guid actorUserId, CancellationToken cancellationToken) =>
+        Task.FromResult(PageActionResult.Failure("Bank accounts are deactivated instead of deleted."));
+
+    private Task<PagedResult<BankAccountListItem>> LoadPageAsync(PagedQuery query, CancellationToken cancellationToken) => BankAccountService.GetPageAsync(DefaultCompanyId, query, cancellationToken);
+}

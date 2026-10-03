@@ -31,6 +31,8 @@ public interface IUnitOfWork
     IRepository<Erp_LockDateEntity> LockDates { get; }
     IRepository<GL_ChartOfAccountEntity> ChartOfAccounts { get; }
     IRepository<GL_VoucherTypeEntity> VoucherTypes { get; }
+    IRepository<GL_BankAccountEntity> BankAccounts { get; }
+    IRepository<GL_CashAccountEntity> CashAccounts { get; }
     IRepository<AuditEventEntity> AuditEvents { get; }
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
@@ -92,6 +94,8 @@ public sealed class EfUnitOfWork(ErpDbContext db) : IUnitOfWork
     public IRepository<Erp_LockDateEntity> LockDates { get; } = new EfRepository<Erp_LockDateEntity>(db);
     public IRepository<GL_ChartOfAccountEntity> ChartOfAccounts { get; } = new EfRepository<GL_ChartOfAccountEntity>(db);
     public IRepository<GL_VoucherTypeEntity> VoucherTypes { get; } = new EfRepository<GL_VoucherTypeEntity>(db);
+    public IRepository<GL_BankAccountEntity> BankAccounts { get; } = new EfRepository<GL_BankAccountEntity>(db);
+    public IRepository<GL_CashAccountEntity> CashAccounts { get; } = new EfRepository<GL_CashAccountEntity>(db);
     public IRepository<AuditEventEntity> AuditEvents { get; } = new EfRepository<AuditEventEntity>(db);
 
     public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default) => db.SaveChangesAsync(cancellationToken);

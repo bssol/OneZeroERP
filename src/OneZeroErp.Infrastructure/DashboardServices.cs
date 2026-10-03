@@ -63,6 +63,8 @@ public sealed class DashboardService(IModuleRegistry moduleRegistry) : IDashboar
                 new("Manage chart of accounts", "Build the account hierarchy used by future journals and reports.", "/gl/chart-of-accounts", "blue"),
                 new("Manage voucher types", "Configure the transaction categories used by journal workflows.", "/gl/voucher-types", "blue"),
                 new("Manage day locks", "Lock accounting dates before controlled journal processing begins.", "/gl/day-locks", "amber"),
+                new("Manage bank accounts", "Link bank accounts to posting Asset accounts.", "/gl/bank-accounts", "blue"),
+                new("Manage cash accounts", "Define physical cash locations and their GL links.", "/gl/cash-accounts", "blue"),
                 new("Review roadmap", "See the planned GL delivery sequence.", "/modules/gl", "indigo")
             ],
             [new("GL shell initialized", "Placeholder data only; no journals or reports exist yet.", "Today", "slate")],
