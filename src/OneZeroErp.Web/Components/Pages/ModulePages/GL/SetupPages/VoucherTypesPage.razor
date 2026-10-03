@@ -1,0 +1,86 @@
+@page "/gl/voucher-types"
+@attribute [Authorize]
+@inject IVoucherTypeService VoucherTypeService
+@inject IConfiguration Configuration
+@using OneZeroErp.Application.GeneralLedger
+@using OneZeroErp.SharedUi
+
+<PermissionPagedPage TItem="VoucherTypeListItem"
+                     Resource="gl.voucher-types"
+                     Eyebrow="General Ledger"
+                     Title="Voucher Types"
+                     Description="Configure the voucher categories and account requirements used by journal entry workflows."
+                     CreateText="New voucher type"
+                     NewEntityTitle="New voucher type"
+                     EditEntityTitle="Edit voucher type"
+                     EmptyMessage="Create a voucher type to define the transaction categories available to users."
+                     ShowDeleteAction="false"
+                     LoadPage="LoadPageAsync"
+                     DeleteItem="DeleteItemAsync"
+                     CreateRequested="BeginCreate"
+                     EditRequested="BeginEdit">
+    <HeaderTemplate><th scope="col">Code</th><th scope="col">Description</th><th scope="col">Account requirement</th><th scope="col">Status</th></HeaderTemplate>
+    <RowTemplate Context="voucherType">
+        <td><strong>@voucherType.Code</strong></td>
+        <td>@voucherType.Description</td>
+        <td>@RequirementLabel(voucherType)</td>
+        <td><span class="status-pill status-pill--@(voucherType.IsActive ? "open" : "closed")">@(voucherType.IsActive ? "Active" : "Inactive")</span></td>
+    </RowTemplate>
+    <EditorTemplate Context="pageContext">
+        <EditForm Model="@EditModel" OnValidSubmit="@(() => SaveAsync(pageContext))" Context="editContext">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+            <div class="form-grid">
+                <label>Code<InputText @bind-Value="EditModel.Code" placeholder="JVV" /></label>
+                <label class="form-grid__full">Description<InputText @bind-Value="EditModel.Description" placeholder="Journal Voucher" /></label>
+                <label class="checkbox-field"><InputCheckbox @bind-Value="EditModel.RequiresBankAccount" /> Requires bank account</label>
+                <label class="checkbox-field"><InputCheckbox @bind-Value="EditModel.RequiresCashAccount" /> Requires cash account</label>
+                <label class="checkbox-field"><InputCheckbox @bind-Value="EditModel.IsActive" /> Active</label>
+            </div>
+            <div class="entity-dialog__actions"><button class="button button--secondary" type="button" @onclick="pageContext.CloseEditor">Cancel</button><button class="button button--primary" type="submit">Save voucher type</button></div>
+        </EditForm>
+    </EditorTemplate>
+</PermissionPagedPage>
+
+@code {
+    private VoucherTypeEditModel EditModel { get; set; } = new();
+
+    private Task<PageActionResult> BeginCreate()
+    {
+        EditModel = NewModel();
+        return Task.FromResult(PageActionResult.Success());
+    }
+
+    private Task<PageActionResult> BeginEdit(VoucherTypeListItem item)
+    {
+        EditModel = new()
+        {
+            Id = item.Id,
+            CompanyId = item.CompanyId,
+            Code = item.Code,
+            Description = item.Description,
+            RequiresBankAccount = item.RequiresBankAccount,
+            RequiresCashAccount = item.RequiresCashAccount,
+            IsActive = item.IsActive
+        };
+        return Task.FromResult(PageActionResult.Success());
+    }
+
+    private Task<PageActionResult> SaveAsync(PermissionPagedPageContext<VoucherTypeListItem> context) => context.SubmitAsync(async () =>
+    {
+        var result = await VoucherTypeService.SaveAsync(EditModel, context.CurrentUserId);
+        return result.Succeeded ? PageActionResult.Success() : PageActionResult.Failure(result.ErrorMessage ?? "The voucher type could not be saved.");
+    });
+
+    private Task<PageActionResult> DeleteItemAsync(VoucherTypeListItem item, Guid actorUserId, CancellationToken cancellationToken) =>
+        Task.FromResult(PageActionResult.Failure("Voucher types are deactivated instead of deleted."));
+
+    private Task<PagedResult<VoucherTypeListItem>> LoadPageAsync(PagedQuery query, CancellationToken cancellationToken) =>
+        VoucherTypeService.GetPageAsync(DefaultCompanyId, query, cancellationToken);
+
+    private VoucherTypeEditModel NewModel() => new() { CompanyId = DefaultCompanyId };
+
+    private Guid DefaultCompanyId => Guid.TryParse(Configuration["Company:DefaultCompanyId"], out var companyId) ? companyId : Guid.Empty;
+
+    private static string RequirementLabel(VoucherTypeListItem item) => item.RequiresBankAccount ? "Bank account" : item.RequiresCashAccount ? "Cash account" : "None";
+}

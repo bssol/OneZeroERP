@@ -21,7 +21,10 @@ public sealed class DatabaseInitializer(ErpDbContext db, IConfiguration configur
 								"gl.fiscal-years:CanDelete",
 								"gl.chart-of-accounts:CanView",
 								"gl.chart-of-accounts:CanAdd",
-								"gl.chart-of-accounts:CanEdit"
+								"gl.chart-of-accounts:CanEdit",
+								"gl.voucher-types:CanView",
+								"gl.voucher-types:CanAdd",
+								"gl.voucher-types:CanEdit"
 						]),
 				new(
 						"fiscal.manager",
@@ -33,7 +36,8 @@ public sealed class DatabaseInitializer(ErpDbContext db, IConfiguration configur
 								"gl.fiscal-years:CanAdd",
 								"gl.fiscal-years:CanEdit",
 								"gl.fiscal-years:CanDelete",
-								"gl.chart-of-accounts:CanView"
+								"gl.chart-of-accounts:CanView",
+								"gl.voucher-types:CanView"
 						]),
 				new(
 						"gl.accountant",
@@ -44,7 +48,10 @@ public sealed class DatabaseInitializer(ErpDbContext db, IConfiguration configur
 								"gl.fiscal-years:CanView",
 								"gl.chart-of-accounts:CanView",
 								"gl.chart-of-accounts:CanAdd",
-								"gl.chart-of-accounts:CanEdit"
+								"gl.chart-of-accounts:CanEdit",
+								"gl.voucher-types:CanView",
+								"gl.voucher-types:CanAdd",
+								"gl.voucher-types:CanEdit"
 						]),
 				new(
 						"gl.viewer",
@@ -53,7 +60,8 @@ public sealed class DatabaseInitializer(ErpDbContext db, IConfiguration configur
 						"DevelopmentSeed:ViewerPassword",
 						[
 								"gl.fiscal-years:CanView",
-								"gl.chart-of-accounts:CanView"
+								"gl.chart-of-accounts:CanView",
+								"gl.voucher-types:CanView"
 						])
 	];
 
@@ -79,9 +87,17 @@ public sealed class DatabaseInitializer(ErpDbContext db, IConfiguration configur
 		foreach (var seedUser in DevelopmentUsers)
 		{
 			var password = GetConfiguredPassword(seedUser.PasswordConfigurationKey);
-			if (string.IsNullOrWhiteSpace(password) ||
-					await db.AppUsers.AnyAsync(x => x.UserName == seedUser.UserName, cancellationToken))
+			if (string.IsNullOrWhiteSpace(password))
 				continue;
+
+			var existingUser = await db.AppUsers.Include(x => x.Permissions).SingleOrDefaultAsync(x => x.UserName == seedUser.UserName, cancellationToken);
+			if (existingUser is not null)
+			{
+				var existingPermissions = existingUser.Permissions.Select(x => x.Permission).ToHashSet(StringComparer.OrdinalIgnoreCase);
+				foreach (var permission in seedUser.Permissions.Where(permission => !existingPermissions.Contains(permission)))
+					existingUser.Permissions.Add(new AppUserPermissionEntity { Id = Guid.NewGuid(), Permission = permission });
+				continue;
+			}
 
 			var now = clock.UtcNow;
 			db.AppUsers.Add(new AppUserEntity
