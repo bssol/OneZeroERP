@@ -1,0 +1,68 @@
+@page "/gl/currencies"
+@attribute [Authorize]
+@inject ICurrencyService CurrencyService
+@inject IConfiguration Configuration
+@using OneZeroErp.Application.GeneralLedger
+@using OneZeroErp.SharedUi
+
+<PermissionPagedPage TItem="CurrencyListItem"
+                     Resource="gl.currencies"
+                     Eyebrow="General Ledger"
+                     Title="Currencies"
+                     Description="Define the currencies available to the company and identify its base currency."
+                     CreateText="New currency"
+                     NewEntityTitle="New currency"
+                     EditEntityTitle="Edit currency"
+                     EmptyMessage="Add a currency before configuring exchange rates."
+                     ShowDeleteAction="false"
+                     LoadPage="LoadPageAsync"
+                     DeleteItem="DeleteItemAsync"
+                     CreateRequested="BeginCreate"
+                     EditRequested="BeginEdit">
+    <HeaderTemplate><th scope="col">Code</th><th scope="col">Currency</th><th scope="col">Decimals</th><th scope="col">Role</th><th scope="col">Status</th></HeaderTemplate>
+    <RowTemplate Context="currency"><td><strong>@currency.Code</strong></td><td>@currency.Symbol @currency.Name</td><td>@currency.DecimalPlaces</td><td>@(currency.IsBaseCurrency ? "Base currency" : "Foreign currency")</td><td><span class="status-pill status-pill--@(currency.IsActive ? "open" : "closed")">@(currency.IsActive ? "Active" : "Inactive")</span></td></RowTemplate>
+    <EditorTemplate Context="pageContext">
+        <EditForm Model="@EditModel" OnValidSubmit="@(() => SaveAsync(pageContext))" Context="editContext">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+            <div class="form-grid">
+                <label>Code<InputText @bind-Value="EditModel.Code" placeholder="PKR" /></label>
+                <label>Symbol<InputText @bind-Value="EditModel.Symbol" placeholder="₨" /></label>
+                <label class="form-grid__full">Name<InputText @bind-Value="EditModel.Name" placeholder="Pakistani Rupee" /></label>
+                <label>Decimal places<InputNumber @bind-Value="EditModel.DecimalPlaces" /></label>
+                <label class="checkbox-field"><InputCheckbox @bind-Value="EditModel.IsBaseCurrency" /> Base currency</label>
+                <label class="checkbox-field"><InputCheckbox @bind-Value="EditModel.IsActive" /> Active</label>
+            </div>
+            <p class="form-hint">Only one base currency is allowed per company. Exchange rates are maintained separately by effective date.</p>
+            <div class="entity-dialog__actions"><button class="button button--secondary" type="button" @onclick="pageContext.CloseEditor">Cancel</button><button class="button button--primary" type="submit">Save currency</button></div>
+        </EditForm>
+    </EditorTemplate>
+</PermissionPagedPage>
+
+@code {
+    private CurrencyEditModel EditModel { get; set; } = new();
+    private Guid DefaultCompanyId => Guid.TryParse(Configuration["Company:DefaultCompanyId"], out var companyId) ? companyId : Guid.Empty;
+
+    private Task<PageActionResult> BeginCreate()
+    {
+        EditModel = new() { CompanyId = DefaultCompanyId };
+        return Task.FromResult(PageActionResult.Success());
+    }
+
+    private Task<PageActionResult> BeginEdit(CurrencyListItem item)
+    {
+        EditModel = new() { Id = item.Id, CompanyId = item.CompanyId, Code = item.Code, Name = item.Name, Symbol = item.Symbol, DecimalPlaces = item.DecimalPlaces, IsBaseCurrency = item.IsBaseCurrency, IsActive = item.IsActive };
+        return Task.FromResult(PageActionResult.Success());
+    }
+
+    private Task<PageActionResult> SaveAsync(PermissionPagedPageContext<CurrencyListItem> context) => context.SubmitAsync(async () =>
+    {
+        var result = await CurrencyService.SaveAsync(EditModel, context.CurrentUserId);
+        return result.Succeeded ? PageActionResult.Success() : PageActionResult.Failure(result.ErrorMessage ?? "The currency could not be saved.");
+    });
+
+    private Task<PageActionResult> DeleteItemAsync(CurrencyListItem item, Guid actorUserId, CancellationToken cancellationToken) =>
+        Task.FromResult(PageActionResult.Failure("Currencies are deactivated instead of deleted."));
+
+    private Task<PagedResult<CurrencyListItem>> LoadPageAsync(PagedQuery query, CancellationToken cancellationToken) => CurrencyService.GetPageAsync(DefaultCompanyId, query, cancellationToken);
+}

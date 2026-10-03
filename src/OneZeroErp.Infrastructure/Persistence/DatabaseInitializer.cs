@@ -32,7 +32,13 @@ public sealed class DatabaseInitializer(ErpDbContext db, IConfiguration configur
 								"gl.bank-accounts:CanEdit",
 								"gl.cash-accounts:CanView",
 								"gl.cash-accounts:CanAdd",
-								"gl.cash-accounts:CanEdit"
+								"gl.cash-accounts:CanEdit",
+								"gl.currencies:CanView",
+								"gl.currencies:CanAdd",
+								"gl.currencies:CanEdit",
+								"gl.exchange-rates:CanView",
+								"gl.exchange-rates:CanAdd",
+								"gl.exchange-rates:CanEdit"
 						]),
 				new(
 						"fiscal.manager",
@@ -49,7 +55,9 @@ public sealed class DatabaseInitializer(ErpDbContext db, IConfiguration configur
 								"gl.day-locks:CanView",
 								"gl.day-locks:CanEdit",
 								"gl.bank-accounts:CanView",
-								"gl.cash-accounts:CanView"
+								"gl.cash-accounts:CanView",
+								"gl.currencies:CanView",
+								"gl.exchange-rates:CanView"
 						]),
 				new(
 						"gl.accountant",
@@ -70,7 +78,13 @@ public sealed class DatabaseInitializer(ErpDbContext db, IConfiguration configur
 								"gl.bank-accounts:CanEdit",
 								"gl.cash-accounts:CanView",
 								"gl.cash-accounts:CanAdd",
-								"gl.cash-accounts:CanEdit"
+								"gl.cash-accounts:CanEdit",
+								"gl.currencies:CanView",
+								"gl.currencies:CanAdd",
+								"gl.currencies:CanEdit",
+								"gl.exchange-rates:CanView",
+								"gl.exchange-rates:CanAdd",
+								"gl.exchange-rates:CanEdit"
 						]),
 				new(
 						"gl.viewer",
@@ -83,7 +97,9 @@ public sealed class DatabaseInitializer(ErpDbContext db, IConfiguration configur
 								"gl.voucher-types:CanView",
 								"gl.day-locks:CanView",
 								"gl.bank-accounts:CanView",
-								"gl.cash-accounts:CanView"
+								"gl.cash-accounts:CanView",
+								"gl.currencies:CanView",
+								"gl.exchange-rates:CanView"
 						])
 	];
 

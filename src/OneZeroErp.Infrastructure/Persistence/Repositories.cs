@@ -33,6 +33,8 @@ public interface IUnitOfWork
     IRepository<GL_VoucherTypeEntity> VoucherTypes { get; }
     IRepository<GL_BankAccountEntity> BankAccounts { get; }
     IRepository<GL_CashAccountEntity> CashAccounts { get; }
+    IRepository<GL_CurrencyEntity> Currencies { get; }
+    IRepository<GL_ExchangeRateEntity> ExchangeRates { get; }
     IRepository<AuditEventEntity> AuditEvents { get; }
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
@@ -96,6 +98,8 @@ public sealed class EfUnitOfWork(ErpDbContext db) : IUnitOfWork
     public IRepository<GL_VoucherTypeEntity> VoucherTypes { get; } = new EfRepository<GL_VoucherTypeEntity>(db);
     public IRepository<GL_BankAccountEntity> BankAccounts { get; } = new EfRepository<GL_BankAccountEntity>(db);
     public IRepository<GL_CashAccountEntity> CashAccounts { get; } = new EfRepository<GL_CashAccountEntity>(db);
+    public IRepository<GL_CurrencyEntity> Currencies { get; } = new EfRepository<GL_CurrencyEntity>(db);
+    public IRepository<GL_ExchangeRateEntity> ExchangeRates { get; } = new EfRepository<GL_ExchangeRateEntity>(db);
     public IRepository<AuditEventEntity> AuditEvents { get; } = new EfRepository<AuditEventEntity>(db);
 
     public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default) => db.SaveChangesAsync(cancellationToken);

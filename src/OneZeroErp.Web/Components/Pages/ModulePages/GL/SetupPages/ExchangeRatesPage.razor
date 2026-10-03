@@ -1,0 +1,68 @@
+@page "/gl/exchange-rates"
+@attribute [Authorize]
+@inject IExchangeRateService ExchangeRateService
+@inject IConfiguration Configuration
+@using OneZeroErp.Application.GeneralLedger
+@using OneZeroErp.SharedUi
+
+<PermissionPagedPage TItem="ExchangeRateListItem"
+                     Resource="gl.exchange-rates"
+                     Eyebrow="General Ledger"
+                     Title="Exchange Rates"
+                     Description="Maintain effective-dated conversion rates from foreign currencies to the company base currency."
+                     CreateText="New exchange rate"
+                     NewEntityTitle="New exchange rate"
+                     EditEntityTitle="Edit exchange rate"
+                     EmptyMessage="Create currencies before entering exchange rates."
+                     ShowDeleteAction="false"
+                     LoadPage="LoadPageAsync"
+                     DeleteItem="DeleteItemAsync"
+                     CreateRequested="BeginCreate"
+                     EditRequested="BeginEdit">
+    <HeaderTemplate><th scope="col">Currency</th><th scope="col">Effective date</th><th scope="col">Rate to base</th></HeaderTemplate>
+    <RowTemplate Context="rate"><td><strong>@rate.CurrencyCode</strong><br /><span class="table-secondary">@rate.CurrencyName</span></td><td>@rate.EffectiveDate.ToString("dd MMM yyyy")</td><td>@rate.RateToBase.ToString("0.########")</td></RowTemplate>
+    <EditorTemplate Context="pageContext">
+        <EditForm Model="@EditModel" OnValidSubmit="@(() => SaveAsync(pageContext))" Context="editContext">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+            <div class="form-grid">
+                <label>Currency<InputSelect @bind-Value="EditModel.CurrencyId"><option value="@Guid.Empty">Select a currency</option>@foreach (var currency in CurrencyOptions) { <option value="@currency.Id">@currency.Code — @currency.Name</option> }</InputSelect></label>
+                <label>Effective date<InputDate @bind-Value="EditModel.EffectiveDate" /></label>
+                <label>Rate to base currency<InputNumber @bind-Value="EditModel.RateToBase" step="0.00000001" /></label>
+            </div>
+            <p class="form-hint">For the base currency, enter a rate of 1. Each currency can have one rate per effective date.</p>
+            <div class="entity-dialog__actions"><button class="button button--secondary" type="button" @onclick="pageContext.CloseEditor">Cancel</button><button class="button button--primary" type="submit">Save exchange rate</button></div>
+        </EditForm>
+    </EditorTemplate>
+</PermissionPagedPage>
+
+@code {
+    private ExchangeRateEditModel EditModel { get; set; } = new();
+    private IReadOnlyList<CurrencyListItem> CurrencyOptions { get; set; } = [];
+    private Guid DefaultCompanyId => Guid.TryParse(Configuration["Company:DefaultCompanyId"], out var companyId) ? companyId : Guid.Empty;
+
+    private async Task<PageActionResult> BeginCreate()
+    {
+        EditModel = new() { CompanyId = DefaultCompanyId, EffectiveDate = DateOnly.FromDateTime(DateTime.Today), RateToBase = 1m };
+        CurrencyOptions = await ExchangeRateService.GetCurrencyOptionsAsync(DefaultCompanyId);
+        return PageActionResult.Success();
+    }
+
+    private async Task<PageActionResult> BeginEdit(ExchangeRateListItem item)
+    {
+        EditModel = new() { Id = item.Id, CompanyId = item.CompanyId, CurrencyId = item.CurrencyId, EffectiveDate = item.EffectiveDate, RateToBase = item.RateToBase };
+        CurrencyOptions = await ExchangeRateService.GetCurrencyOptionsAsync(item.CompanyId);
+        return PageActionResult.Success();
+    }
+
+    private Task<PageActionResult> SaveAsync(PermissionPagedPageContext<ExchangeRateListItem> context) => context.SubmitAsync(async () =>
+    {
+        var result = await ExchangeRateService.SaveAsync(EditModel, context.CurrentUserId);
+        return result.Succeeded ? PageActionResult.Success() : PageActionResult.Failure(result.ErrorMessage ?? "The exchange rate could not be saved.");
+    });
+
+    private Task<PageActionResult> DeleteItemAsync(ExchangeRateListItem item, Guid actorUserId, CancellationToken cancellationToken) =>
+        Task.FromResult(PageActionResult.Failure("Exchange rates are updated instead of deleted."));
+
+    private Task<PagedResult<ExchangeRateListItem>> LoadPageAsync(PagedQuery query, CancellationToken cancellationToken) => ExchangeRateService.GetPageAsync(DefaultCompanyId, query, cancellationToken);
+}

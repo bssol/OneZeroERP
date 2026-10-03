@@ -251,6 +251,85 @@ namespace OneZeroErp.Infrastructure.Persistence.Migrations
                     b.ToTable("Gl_Setup_CashAccounts", "gl");
                 });
 
+            modelBuilder.Entity("OneZeroErp.Infrastructure.GeneralLedger.GL_CurrencyEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("DecimalPlaces")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsBaseCurrency")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<string>("Symbol")
+                        .IsRequired()
+                        .HasMaxLength(8)
+                        .HasColumnType("nvarchar(8)");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+                    b.HasIndex("CompanyId", "Code").IsUnique();
+                    b.ToTable("Gl_Setup_Currencies", "gl");
+                });
+
+            modelBuilder.Entity("OneZeroErp.Infrastructure.GeneralLedger.GL_ExchangeRateEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CurrencyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateOnly>("EffectiveDate")
+                        .HasColumnType("date");
+
+                    b.Property<decimal>("RateToBase")
+                        .HasColumnType("decimal(19,8)");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+                    b.HasIndex("CompanyId", "CurrencyId", "EffectiveDate").IsUnique();
+                    b.HasIndex("CurrencyId");
+                    b.HasOne("OneZeroErp.Infrastructure.GeneralLedger.GL_CurrencyEntity", null)
+                        .WithMany()
+                        .HasForeignKey("CurrencyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                    b.ToTable("Gl_Setup_ExchangeRates", "gl");
+                });
+
             modelBuilder.Entity("OneZeroErp.Infrastructure.Persistence.AppUserEntity", b =>
                 {
                     b.Property<Guid>("Id")

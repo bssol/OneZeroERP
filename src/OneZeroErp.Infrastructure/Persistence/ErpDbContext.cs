@@ -13,6 +13,8 @@ public sealed class ErpDbContext(DbContextOptions<ErpDbContext> options) : DbCon
 	public DbSet<GL_VoucherTypeEntity> VoucherTypes => Set<GL_VoucherTypeEntity>();
 	public DbSet<GL_BankAccountEntity> BankAccounts => Set<GL_BankAccountEntity>();
 	public DbSet<GL_CashAccountEntity> CashAccounts => Set<GL_CashAccountEntity>();
+	public DbSet<GL_CurrencyEntity> Currencies => Set<GL_CurrencyEntity>();
+	public DbSet<GL_ExchangeRateEntity> ExchangeRates => Set<GL_ExchangeRateEntity>();
 	public DbSet<AuditEventEntity> AuditEvents => Set<AuditEventEntity>();
 
 	protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -138,6 +140,34 @@ public sealed class ErpDbContext(DbContextOptions<ErpDbContext> options) : DbCon
 			entity.Property(x => x.UpdatedAtUtc).IsRequired();
 			entity.HasIndex(x => new { x.CompanyId, x.Code }).IsUnique();
 			entity.HasIndex(x => new { x.CompanyId, x.GlAccountId }).IsUnique();
+		});
+		modelBuilder.Entity<GL_CurrencyEntity>(entity =>
+		{
+			entity.ToTable("Gl_Setup_Currencies", "gl");
+			entity.HasKey(x => x.Id);
+			entity.Property(x => x.CompanyId).IsRequired();
+			entity.Property(x => x.Code).HasMaxLength(10).IsRequired();
+			entity.Property(x => x.Name).HasMaxLength(120).IsRequired();
+			entity.Property(x => x.Symbol).HasMaxLength(8).IsRequired();
+			entity.Property(x => x.DecimalPlaces).IsRequired();
+			entity.Property(x => x.IsBaseCurrency).IsRequired();
+			entity.Property(x => x.IsActive).IsRequired();
+			entity.Property(x => x.CreatedAtUtc).IsRequired();
+			entity.Property(x => x.UpdatedAtUtc).IsRequired();
+			entity.HasIndex(x => new { x.CompanyId, x.Code }).IsUnique();
+		});
+		modelBuilder.Entity<GL_ExchangeRateEntity>(entity =>
+		{
+			entity.ToTable("Gl_Setup_ExchangeRates", "gl");
+			entity.HasKey(x => x.Id);
+			entity.Property(x => x.CompanyId).IsRequired();
+			entity.Property(x => x.CurrencyId).IsRequired();
+			entity.Property(x => x.EffectiveDate).HasColumnType("date").IsRequired();
+			entity.Property(x => x.RateToBase).HasColumnType("decimal(19,8)").IsRequired();
+			entity.Property(x => x.CreatedAtUtc).IsRequired();
+			entity.Property(x => x.UpdatedAtUtc).IsRequired();
+			entity.HasIndex(x => new { x.CompanyId, x.CurrencyId, x.EffectiveDate }).IsUnique();
+			entity.HasOne<GL_CurrencyEntity>().WithMany().HasForeignKey(x => x.CurrencyId).OnDelete(DeleteBehavior.Restrict);
 		});
 		modelBuilder.Entity<AuditEventEntity>(entity =>
 		{

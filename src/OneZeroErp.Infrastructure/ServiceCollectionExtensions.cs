@@ -30,6 +30,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IVoucherTypeService, VoucherTypeService>();
         services.AddScoped<IBankAccountService, BankCashAccountService>();
         services.AddScoped<ICashAccountService, BankCashAccountService>();
+        services.AddScoped<ICurrencyService, CurrencyService>();
+        services.AddScoped<IExchangeRateService, CurrencyService>();
         services.AddScoped<IAppUserStore, SqlAppUserStore>();
         services.AddScoped<DatabaseInitializer>();
         return services;

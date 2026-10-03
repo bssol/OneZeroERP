@@ -65,6 +65,8 @@ public sealed class DashboardService(IModuleRegistry moduleRegistry) : IDashboar
                 new("Manage day locks", "Lock accounting dates before controlled journal processing begins.", "/gl/day-locks", "amber"),
                 new("Manage bank accounts", "Link bank accounts to posting Asset accounts.", "/gl/bank-accounts", "blue"),
                 new("Manage cash accounts", "Define physical cash locations and their GL links.", "/gl/cash-accounts", "blue"),
+                new("Manage currencies", "Define base and foreign currencies for the company.", "/gl/currencies", "indigo"),
+                new("Manage exchange rates", "Maintain effective-dated conversion rates.", "/gl/exchange-rates", "indigo"),
                 new("Review roadmap", "See the planned GL delivery sequence.", "/modules/gl", "indigo")
             ],
             [new("GL shell initialized", "Placeholder data only; no journals or reports exist yet.", "Today", "slate")],
