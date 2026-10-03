@@ -27,7 +27,7 @@
             <div class="topbar-actions">
                 <button class="icon-button" aria-label="Notifications">♢<span class="notification-dot"></span></button>
                 <label class="theme-picker">Theme <select aria-label="Select theme" @onchange="ChangeTheme">@foreach (var theme in ThemeService.Themes) { <option value="@theme.Key">@theme.Name</option> }</select></label>
-                <AuthorizeView><Authorized><details class="profile-menu"><summary><UserAvatar ImageUrl="PictureUrl(context.User)" Initials="@Initials" AriaLabel="Current user profile" /><span class="profile-name">@context.User.Identity?.Name</span></summary><div class="profile-popover"><div class="profile-role">@context.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value</div><form method="post" action="/account/logout"><AntiforgeryToken /><button type="submit" class="logout-button">Sign out</button></form></div></details></Authorized></AuthorizeView>
+                <AuthorizeView Context="authState"><Authorized><details class="profile-menu"><summary><UserAvatar ImageUrl="PictureUrl(authState.User)" Initials="@Initials(authState.User)" AriaLabel="Current user profile" /><span class="profile-name">@DisplayName(authState.User)</span></summary><div class="profile-popover"><strong class="profile-display-name">@DisplayName(authState.User)</strong><div class="profile-username">@@@UserName(authState.User)</div><div class="profile-role">@Role(authState.User)</div><form method="post" action="/account/logout"><AntiforgeryToken /><button type="submit" class="logout-button">Sign out</button></form></div></details></Authorized></AuthorizeView>
             </div>
         </header>
         <div class="content-wrap">@Body</div>
@@ -36,7 +36,31 @@
 @code {
     private bool SidebarCollapsed;
     private bool MobileNavOpen;
-    private string Initials => "AD";
+    private static string DisplayName(System.Security.Claims.ClaimsPrincipal user) =>
+        user.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value
+        ?? user.Identity?.Name
+        ?? UserName(user)
+        ?? "User";
+
+    private static string? UserName(System.Security.Claims.ClaimsPrincipal user) =>
+        user.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.UniqueName)?.Value
+        ?? user.FindFirst("preferred_username")?.Value;
+
+    private static string Role(System.Security.Claims.ClaimsPrincipal user) =>
+        user.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "User";
+
+    private static string Initials(System.Security.Claims.ClaimsPrincipal user)
+    {
+        var name = DisplayName(user).Trim();
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length switch
+        {
+            0 => "U",
+            1 => name[..Math.Min(2, name.Length)].ToUpperInvariant(),
+            _ => string.Concat(parts[0][0], parts[^1][0]).ToUpperInvariant()
+        };
+    }
+
     private static string? PictureUrl(System.Security.Claims.ClaimsPrincipal user) => user.FindFirst("picture")?.Value;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)

@@ -1,0 +1,152 @@
+@page "/gl/chart-of-accounts"
+@attribute [Authorize]
+@inject IChartOfAccountService ChartOfAccountService
+@using OneZeroErp.Application.GeneralLedger
+@using OneZeroErp.Domain.GeneralLedger.Setup
+@using OneZeroErp.SharedUi
+
+<PermissionPagedPage TItem="ChartOfAccountListItem"
+                     Resource="gl.chart-of-accounts"
+                     Eyebrow="General Ledger"
+                     Title="Chart of accounts"
+                     Description="Organize the account hierarchy used by journals and financial statements."
+                     CreateText="Add account"
+                     NewEntityTitle="Add account"
+                     EditEntityTitle="Edit account"
+                     DialogCssClass="entity-dialog--wide"
+                     EmptyMessage="Create the first account to begin your general ledger hierarchy."
+                     ShowDeleteAction="false"
+                     LoadPage="LoadPageAsync"
+                     DeleteItem="DeleteItemAsync"
+                     CreateRequested="BeginCreate"
+                     EditRequested="BeginEdit">
+    <HeaderTemplate><th scope="col">Account</th><th scope="col">Parent</th><th scope="col">Type</th><th scope="col">Usage</th><th scope="col">Status</th></HeaderTemplate>
+    <RowTemplate Context="account"><td><strong>@account.AccountNo</strong><br /><span class="table-secondary">@account.Title</span></td><td>@(account.ParentAccountNo ?? "—")</td><td>@AccountTypeLabel(account.AccountType)</td><td>@(account.IsPostingAccount ? "Posting" : "Hierarchical")</td><td><span class="status-pill status-pill--@(account.IsActive ? "open" : "closed")">@(account.IsActive ? "Active" : "Inactive")</span></td></RowTemplate>
+    <EditorTemplate Context="pageContext">
+        <EditForm Model="@EditModel" OnValidSubmit="@(() => SaveAsync(pageContext))" Context="editContext">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+            @if (IsTreeCreateMode)
+            {
+                <div class="account-tree-picker">
+                    <div class="account-tree-picker__heading"><div><strong>Select a parent account</strong><span>Choose a non-posting account from the hierarchy.</span></div><span class="account-tree-picker__count">@ParentTree.Count root accounts</span></div>
+                    @if (ParentTree.Count == 0)
+                    {
+                        <div class="entity-state entity-state--compact" role="status"><strong>No parent accounts available</strong><span>Create a root account before adding a child account.</span></div>
+                    }
+                    else
+                    {
+                        <div class="account-tree" role="tree" aria-label="Parent accounts">
+                            @foreach (var node in ParentTree)
+                            {
+                                <ChartOfAccountTreeNode Node="node" SelectedAccountNo="@EditModel.ParentAccountNo" OnSelected="SelectParentAsync" />
+                            }
+                        </div>
+                    }
+                </div>
+                <div class="account-selection-summary" role="status"><span>Selected parent</span><strong>@(EditModel.ParentAccountNo is null ? "None" : $"{EditModel.ParentAccountNo} — {EditModel.ParentAccountTitle}")</strong></div>
+                <div class="form-grid">
+                    <label>Account number<InputText @bind-Value="EditModel.AccountNo" placeholder="Select a parent" readonly="true" /></label>
+                    <label>Account type<input value="@AccountTypeLabel(EditModel.AccountType)" readonly /></label>
+                    <label>Title<InputText @bind-Value="EditModel.Title" placeholder="Cash and equivalents" /></label>
+                    <label>Level<InputNumber @bind-Value="EditModel.AccountLevel" readonly="true" /></label>
+                    <label class="form-grid__full">Description<InputTextArea @bind-Value="EditModel.Description" /></label>
+                    <label class="checkbox-field"><InputCheckbox @bind-Value="EditModel.IsPostingAccount" @bind-Value:after="PostingChanged" /> Can be used in vouchers</label>
+                </div>
+            }
+            else
+            {
+                <div class="form-grid">
+                    <label>Account type<InputSelect @bind-Value="EditModel.AccountType" @bind-Value:after="AccountTypeChanged">@foreach (var type in AccountTypes) { <option value="@type">@AccountTypeLabel(type)</option> }</InputSelect></label>
+                    <label>Parent account<InputSelect @bind-Value="EditModel.ParentAccountNo" @bind-Value:after="ParentChanged"><option value="">@(ParentOptions.Count == 0 ? "No parent (root account)" : "Select a parent account")</option>@foreach (var parent in ParentOptions) { <option value="@parent.AccountNo">@parent.AccountNo — @parent.Title</option> }</InputSelect></label>
+                    <label>Parent title<InputText @bind-Value="EditModel.ParentAccountTitle" readonly="true" /></label>
+                    <label>Account number<InputText @bind-Value="EditModel.AccountNo" placeholder="Generated automatically" readonly="true" /></label>
+                    <label>Title<InputText @bind-Value="EditModel.Title" placeholder="Cash and equivalents" /></label>
+                    <label>Level<InputNumber @bind-Value="EditModel.AccountLevel" readonly="true" /></label>
+                    <label class="form-grid__full">Description<InputTextArea @bind-Value="EditModel.Description" /></label>
+                    <label class="checkbox-field"><InputCheckbox @bind-Value="EditModel.IsPostingAccount" @bind-Value:after="PostingChanged" /> Can be used in vouchers</label>
+                    <label class="checkbox-field"><InputCheckbox @bind-Value="EditModel.IsActive" /> Active</label>
+                </div>
+            }
+            <div class="entity-dialog__actions"><button class="button button--secondary" type="button" @onclick="pageContext.CloseEditor">Cancel</button><button class="button button--primary" type="submit" disabled="@(IsTreeCreateMode && string.IsNullOrWhiteSpace(EditModel.ParentAccountNo))">Save account</button></div>
+        </EditForm>
+    </EditorTemplate>
+</PermissionPagedPage>
+
+@code {
+    private ChartOfAccountEditModel EditModel { get; set; } = NewModel();
+    private IReadOnlyList<ChartOfAccountParentOption> ParentOptions { get; set; } = [];
+    private IReadOnlyList<ChartOfAccountTreeItem> ParentTree { get; set; } = [];
+    private bool IsTreeCreateMode { get; set; }
+    private static readonly AccountType[] AccountTypes = [AccountType.Asset, AccountType.Liability, AccountType.Equity, AccountType.Expense, AccountType.Revenue];
+
+    private async Task<PageActionResult> BeginCreate()
+    {
+        EditModel = NewModel();
+        IsTreeCreateMode = true;
+        ParentTree = await ChartOfAccountService.GetParentTreeAsync();
+        return PageActionResult.Success();
+    }
+
+    private async Task<PageActionResult> BeginEdit(ChartOfAccountListItem item)
+    {
+        IsTreeCreateMode = false;
+        EditModel = new() { Id = item.Id, AccountNo = item.AccountNo, ParentAccountNo = item.ParentAccountNo, ParentAccountTitle = item.ParentAccountTitle, AccountLevel = item.AccountLevel, AccountType = item.AccountType,  Title = item.Title, Description = item.Description, IsPostingAccount = item.IsPostingAccount, IsActive = item.IsActive };
+        await LoadParentOptionsAsync();
+        await RefreshAccountNumberAsync();
+        return PageActionResult.Success();
+    }
+
+    private Task<PageActionResult> SaveAsync(PermissionPagedPageContext<ChartOfAccountListItem> context) => context.SubmitAsync(async () =>
+    {
+        var result = await ChartOfAccountService.SaveAsync(EditModel, context.CurrentUserId);
+        return result.Succeeded ? PageActionResult.Success() : PageActionResult.Failure(result.ErrorMessage ?? "The account could not be saved.");
+    });
+
+    private Task<PageActionResult> DeleteItemAsync(ChartOfAccountListItem item, Guid actorUserId, CancellationToken cancellationToken) => Task.FromResult(PageActionResult.Failure("Accounts are deactivated instead of deleted."));
+
+    private Task<PagedResult<ChartOfAccountListItem>> LoadPageAsync(PagedQuery query, CancellationToken cancellationToken) => ChartOfAccountService.GetPageAsync(query, cancellationToken);
+
+    private async Task AccountTypeChanged()
+    {
+        EditModel.ParentAccountNo = null;
+        EditModel.ParentAccountTitle = null;
+        EditModel.AccountLevel = 0;
+        await LoadParentOptionsAsync();
+        await RefreshAccountNumberAsync();
+    }
+
+    private async Task ParentChanged()
+    {
+        var parent = ParentOptions.FirstOrDefault(x => x.AccountNo == EditModel.ParentAccountNo);
+        EditModel.ParentAccountTitle = parent?.Title;
+        EditModel.AccountLevel = parent is null ? 0 : parent.AccountLevel + 1;
+        await RefreshAccountNumberAsync();
+    }
+
+    private async Task SelectParentAsync(ChartOfAccountTreeItem parent)
+    {
+        EditModel.AccountType = parent.AccountType;
+        EditModel.ParentAccountNo = parent.AccountNo;
+        EditModel.ParentAccountTitle = parent.Title;
+        EditModel.AccountLevel = parent.AccountLevel + 1;
+        await RefreshAccountNumberAsync();
+    }
+
+    private Task PostingChanged() => RefreshAccountNumberAsync();
+
+    private async Task LoadParentOptionsAsync() => ParentOptions = await ChartOfAccountService.GetParentOptionsAsync(EditModel.AccountType, EditModel.Id);
+
+    private async Task RefreshAccountNumberAsync()
+    {
+        if (EditModel.Id.HasValue) return;
+
+        var suggestion = await ChartOfAccountService.GetAccountNumberSuggestionAsync(EditModel.AccountType, EditModel.ParentAccountNo, EditModel.IsPostingAccount);
+        EditModel.AccountNo = suggestion.AccountNo ?? string.Empty;
+        if (suggestion.SuggestedTitle is not null) EditModel.Title = suggestion.SuggestedTitle;
+    }
+
+    private static string AccountTypeLabel(AccountType type) => ChartOfAccountNumbering.AccountTypeTitle(type);
+
+    private static ChartOfAccountEditModel NewModel() => new() { AccountType = AccountType.Asset, IsPostingAccount = false };
+}

@@ -1,0 +1,99 @@
+@typeparam TItem
+@inherits PermissionPagedPageBase<TItem>
+
+<EntityPageHeader Eyebrow="@Eyebrow" Title="@Title" Description="@Description" CreateText="@CreateText" CanAdd="@Can(PermissionAction.CanAdd)" ShowCreateAction="@ShowCreateAction" CreateRequested="BeginCreateAsync" />
+
+@if (!string.IsNullOrWhiteSpace(SuccessMessage))
+{
+    <div class="entity-message entity-message--success" role="status">@SuccessMessage</div>
+}
+
+@if (IsUnauthorized)
+{
+    <div class="entity-state entity-state--unauthorized" role="status"><strong>Access restricted</strong><span>You do not have permission to view this information.</span></div>
+}
+else if (IsLoading)
+{
+    <div class="entity-state" role="status"><span class="loading-spinner"></span><span>Loading records…</span></div>
+}
+else if (!string.IsNullOrWhiteSpace(ErrorMessage))
+{
+    <div class="entity-state entity-state--error" role="alert"><strong>Unable to load records</strong><span>@ErrorMessage</span><button class="button button--secondary" type="button" @onclick="@(() => RefreshAsync(PageResult?.PageNumber ?? 1))">Try again</button></div>
+}
+else if (Items.Count == 0)
+{
+    <div class="entity-state" role="status"><strong>No records found</strong><span>@EmptyMessage</span></div>
+}
+else
+{
+    <PagedGrid TItem="TItem" Items="@Items" HeaderTemplate="@HeaderTemplate" RowTemplate="@RowTemplate">
+        <ActionsTemplate Context="item">
+            @if (ShowEditAction && Can(PermissionAction.CanEdit))
+            {
+                <button class="icon-button" type="button" title="Edit" aria-label="Edit item" @onclick="@(() => BeginEditAsync(item))">✎</button>
+            }
+            @if (ShowDeleteAction && Can(PermissionAction.CanDelete))
+            {
+                <button class="icon-button icon-button--danger" type="button" title="Delete" aria-label="Delete item" @onclick="@(() => RequestDelete(item))">⌫</button>
+            }
+        </ActionsTemplate>
+    </PagedGrid>
+    <div class="entity-grid__footer"><span>Showing @StartIndex–@EndIndex of @TotalCount</span><div class="entity-grid__pager"><button class="button button--secondary" type="button" disabled="@(!HasPreviousPage)" @onclick="@(() => GoToPageAsync(PageNumber - 1))">Previous</button><span>Page @PageNumber of @TotalPages</span><button class="button button--secondary" type="button" disabled="@(!HasNextPage)" @onclick="@(() => GoToPageAsync(PageNumber + 1))">Next</button></div></div>
+}
+
+<EntityDialog Open="@IsEntityDialogOpen" Title="@(EditingEntity is null ? NewEntityTitle : EditEntityTitle)" CssClass="@DialogCssClass" Close="CloseEntityDialog">
+    @if (EditorTemplate is not null)
+    {
+        @EditorTemplate(Context)
+    }
+</EntityDialog>
+
+<PermissionPageFeedback IsDeleteConfirmationOpen="@IsDeleteConfirmationOpen" DeleteConfirmationMessage="@DeleteMessage" CancelDelete="CancelDelete" ConfirmDelete="ConfirmDeleteAsync" />
+
+@code {
+    [Parameter, EditorRequired] public string Resource { get; set; } = string.Empty;
+    [Parameter, EditorRequired] public string Eyebrow { get; set; } = string.Empty;
+    [Parameter, EditorRequired] public string Title { get; set; } = string.Empty;
+    [Parameter, EditorRequired] public string Description { get; set; } = string.Empty;
+    [Parameter] public string CreateText { get; set; } = "Create";
+    [Parameter] public bool ShowCreateAction { get; set; } = true;
+    [Parameter] public bool ShowEditAction { get; set; } = true;
+    [Parameter] public bool ShowDeleteAction { get; set; } = true;
+    [Parameter] public string NewEntityTitle { get; set; } = "New item";
+    [Parameter] public string EditEntityTitle { get; set; } = "Edit item";
+    [Parameter] public string EmptyMessage { get; set; } = "There are no records to display.";
+    [Parameter] public string DeleteMessage { get; set; } = "Are you sure you want to delete this item?";
+    [Parameter] public string DialogCssClass { get; set; } = string.Empty;
+    [Parameter, EditorRequired] public Func<PagedQuery, CancellationToken, Task<PagedResult<TItem>>> LoadPage { get; set; } = default!;
+    [Parameter, EditorRequired] public Func<TItem, Guid, CancellationToken, Task<PageActionResult>> DeleteItem { get; set; } = default!;
+    [Parameter, EditorRequired] public Func<Task<PageActionResult>> CreateRequested { get; set; } = default!;
+    [Parameter, EditorRequired] public Func<TItem, Task<PageActionResult>> EditRequested { get; set; } = default!;
+    [Parameter, EditorRequired] public RenderFragment HeaderTemplate { get; set; } = default!;
+    [Parameter, EditorRequired] public RenderFragment<TItem> RowTemplate { get; set; } = default!;
+    [Parameter] public RenderFragment<PermissionPagedPageContext<TItem>>? EditorTemplate { get; set; }
+
+    private PermissionPagedPageContext<TItem> Context => new(EditingEntity, Can, CloseEntityDialog, SetError, () => RefreshAsync(PageResult?.PageNumber ?? 1), () => CurrentUserId, action => ExecutePageActionAsync(action, true));
+    private int PageNumber => PageResult?.PageNumber ?? 1;
+    private int TotalPages => PageResult?.TotalPages ?? 1;
+    private int TotalCount => PageResult?.TotalCount ?? 0;
+    private bool HasPreviousPage => PageNumber > 1;
+    private bool HasNextPage => PageNumber < TotalPages;
+    private int StartIndex => TotalCount == 0 ? 0 : ((PageNumber - 1) * Math.Max(1, Items.Count)) + 1;
+    private int EndIndex => Math.Min(TotalCount, StartIndex + Items.Count - 1);
+
+    protected override string PermissionResource => Resource;
+    protected override Task<PagedResult<TItem>> LoadEntitiesAsync(PagedQuery query, CancellationToken cancellationToken = default) => LoadPage(query, cancellationToken);
+    protected override Task<PageActionResult> DeleteEntityAsync(TItem entity, CancellationToken cancellationToken = default) => DeleteItem(entity, CurrentUserId, cancellationToken);
+
+    private async Task BeginCreateAsync()
+    {
+        var result = await ExecutePageActionAsync(CreateRequested);
+        if (result.Succeeded) OpenEntityDialog();
+    }
+
+    private async Task BeginEditAsync(TItem item)
+    {
+        var result = await ExecutePageActionAsync(() => EditRequested(item));
+        if (result.Succeeded) OpenEntityDialog(item);
+    }
+}

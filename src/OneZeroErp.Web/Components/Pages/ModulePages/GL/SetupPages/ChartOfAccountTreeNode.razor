@@ -1,0 +1,49 @@
+@using OneZeroErp.Application.GeneralLedger
+@using OneZeroErp.Domain.GeneralLedger.Setup
+
+<div class="account-tree__node" role="treeitem" aria-selected="@IsSelected" aria-expanded="@(HasChildren ? Expanded.ToString().ToLowerInvariant() : null)">
+    <div class="account-tree__row">
+        @if (HasChildren)
+        {
+            <button class="account-tree__toggle" type="button" aria-label="@(Expanded ? "Collapse" : "Expand") @Node.Title" @onclick="ToggleAsync" @onclick:stopPropagation="true">@(Expanded ? "▾" : "▸")</button>
+        }
+        else
+        {
+            <span class="account-tree__toggle-spacer" aria-hidden="true"></span>
+        }
+        <button class="account-tree__select @(IsSelected ? "account-tree__select--selected" : string.Empty)" type="button" @onclick="SelectAsync">
+            <strong>@Node.AccountNo</strong>
+            <span>@Node.Title</span>
+            <small>@AccountTypeLabel(Node.AccountType)</small>
+        </button>
+    </div>
+    @if (Expanded && HasChildren)
+    {
+        <div class="account-tree__children" role="group">
+            @foreach (var child in Node.Children)
+            {
+                <ChartOfAccountTreeNode Node="child" SelectedAccountNo="SelectedAccountNo" OnSelected="OnSelected" />
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public ChartOfAccountTreeItem Node { get; set; } = default!;
+    [Parameter] public string? SelectedAccountNo { get; set; }
+    [Parameter] public EventCallback<ChartOfAccountTreeItem> OnSelected { get; set; }
+
+    private bool Expanded { get; set; } = true;
+    private bool HasChildren => Node.Children.Count > 0;
+    private bool IsSelected => string.Equals(Node.AccountNo, SelectedAccountNo, StringComparison.OrdinalIgnoreCase);
+
+    private Task ToggleAsync()
+    {
+        Expanded = !Expanded;
+        return Task.CompletedTask;
+    }
+
+    private Task SelectAsync() => OnSelected.InvokeAsync(Node);
+
+    private static string AccountTypeLabel(AccountType type) => ChartOfAccountNumbering.AccountTypeTitle(type);
+}

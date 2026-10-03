@@ -126,7 +126,7 @@ The identity foundation must include the custom `AppUsers` table and any approve
 
 ## Foundation implementation status
 
-The current bootstrap implementation has completed the solution skeleton, Blazor PWA shell, custom `AppUsers` authentication boundary, cookie-backed browser session, JWT API validation, module registry, application dashboard, placeholder GL dashboard, three themes, responsive layout, and focused unit/component smoke tests. Database persistence, production identity storage, full permissions, audit persistence, and GL business features remain intentionally deferred.
+The current bootstrap implementation has completed the solution skeleton, Blazor PWA shell, custom `AppUsers` authentication boundary, cookie-backed browser session, JWT API validation, module registry, application dashboard, placeholder GL dashboard, three themes, responsive layout, and focused unit/component smoke tests. The initial database persistence and production-shaped AppUsers storage are now implemented through EF Core and SQL Server migrations. Full permission administration, refresh-token persistence, audit query administration, and GL business features remain intentionally deferred.
 
 The development seed user is disabled unless a password is supplied through environment-specific configuration. The preferred PowerShell variable is `$env:DevelopmentSeed__Password`; the implementation also accepts `$env:DevelopmentSeed_Password` for compatibility with an already-configured local shell. The value is read at startup and is not stored in the repository. Never commit a real password or reuse the development signing key in a shared or production deployment.
 
@@ -135,3 +135,9 @@ SQL Server is the current database decision. PostgreSQL remains a future migrati
 ## Explicit non-goals
 
 Bootstrap does not implement fiscal years, accounts, vouchers, journals, reports, budgets, bank reconciliation, or GL screens. Those begin only under the roadmap after this plan's acceptance checklist is met.
+
+## Data-access foundation progress
+
+The first backend data-access increment now includes SQL-backed `identity.Identity_AppUsers` and normalized user permissions, an EF Core `ErpDbContext`, SQL Server provider configuration, the `InitialDataAccess` and module-table naming migrations, and development startup migration/seed orchestration. Fiscal Year persistence uses `erp.Erp_FiscalYears` and no longer creates the schema per request. Authentication reads users asynchronously from the database while retaining the same application authentication contract.
+
+The next data-access increment should add reviewed persistence mappings and application contracts for Chart of Accounts and Voucher Types, followed by integration tests against an isolated SQL Server database. Journal, posting, locking, budget, reconciliation, and report persistence must remain behind their respective domain/application boundaries.

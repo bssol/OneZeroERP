@@ -7,13 +7,18 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using OneZeroErp.Application;
+using OneZeroErp.Application.Time;
 using OneZeroErp.IdentityAccess;
 using OneZeroErp.Infrastructure;
+using OneZeroErp.Infrastructure.Persistence;
 using OneZeroErp.Web;
+using OneZeroErp.Web.Endpoints.Authentication;
+using OneZeroErp.Web.Endpoints.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
+
 if (builder.Environment.IsDevelopment())
 {
     builder.Services.AddDataProtection()
@@ -52,14 +57,20 @@ builder.Services.AddAuthentication(options =>
             ClockSkew = TimeSpan.FromSeconds(30)
         };
     });
-builder.Services.AddOneZeroPlatform();
-builder.Services.AddSingleton<IAppUserStore, InMemoryAppUserStore>();
+builder.Services.AddOneZeroPlatform(builder.Configuration);
+
 builder.Services.AddSingleton<JwtTokenService>();
 builder.Services.AddScoped<IPermissionService, ClaimPermissionService>();
 builder.Services.AddScoped<OneZeroErp.Application.IAuthenticationService, AppUserAuthenticationService>();
 builder.Services.AddScoped<IThemeService, ThemeService>();
 
 var app = builder.Build();
+
+if (app.Environment.IsDevelopment())
+{
+    await using var scope = app.Services.CreateAsyncScope();
+    await scope.ServiceProvider.GetRequiredService<DatabaseInitializer>().InitializeAsync();
+}
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
@@ -76,28 +87,8 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.UseAntiforgery();
 
-app.MapPost("/account/login", async (HttpContext httpContext, [FromForm] LoginRequest request, OneZeroErp.Application.IAuthenticationService authentication) =>
-{
-    var result = await authentication.AuthenticateAsync(request);
-    if (!result.Succeeded || result.Principal is null)
-        return Results.Redirect("/login?error=1");
-
-    await httpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, result.Principal,
-        new AuthenticationProperties { IsPersistent = true, ExpiresUtc = DateTimeOffset.UtcNow.AddHours(8) });
-    return Results.Redirect("/");
-});
-
-app.MapPost("/account/logout", async (HttpContext httpContext) =>
-{
-    await httpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-    return Results.Redirect("/login");
-}).RequireAuthorization();
-
-app.MapGet("/api/me", (HttpContext httpContext) => Results.Ok(new
-{
-    Name = httpContext.User.Identity?.Name,
-    Role = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value
-})).RequireAuthorization();
+app.MapAuthenticationEndpoints();
+app.MapIdentityEndpoints();
 
 app.MapStaticAssets();
 app.MapRazorComponents<App>()

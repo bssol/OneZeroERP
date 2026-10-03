@@ -1,4 +1,4 @@
-﻿namespace OneZeroErp.Infrastructure;
+namespace OneZeroErp.Infrastructure;
 
 public class Class1
 {

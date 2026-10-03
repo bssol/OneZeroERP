@@ -1,4 +1,4 @@
-﻿namespace OneZeroErp.Application;
+namespace OneZeroErp.Application;
 
 public class Class1
 {

@@ -59,7 +59,8 @@ public sealed class DashboardService(IModuleRegistry moduleRegistry) : IDashboar
                 new("Bank reconciliation", "—", "Placeholder", "steady", "slate")
             ],
             [
-                new("Plan fiscal years", "The next approved feature will establish the accounting calendar.", "/modules/gl", "blue"),
+                new("Manage fiscal years", "Define the accounting calendar before adding periods and journals.", "/gl/fiscal-years", "blue"),
+                new("Manage chart of accounts", "Build the account hierarchy used by future journals and reports.", "/gl/chart-of-accounts", "blue"),
                 new("Review roadmap", "See the planned GL delivery sequence.", "/modules/gl", "indigo")
             ],
             [new("GL shell initialized", "Placeholder data only; no journals or reports exist yet.", "Today", "slate")],

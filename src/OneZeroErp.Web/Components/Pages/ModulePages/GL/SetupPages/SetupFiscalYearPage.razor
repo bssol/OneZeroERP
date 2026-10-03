@@ -1,0 +1,80 @@
+@page "/gl/fiscal-years"
+@attribute [Authorize]
+@inject ISetupFiscalYearService SetupFiscalYearService
+@inject IConfiguration Configuration
+@using OneZeroErp.Application.GeneralLedger
+@using OneZeroErp.Domain.GeneralLedger.Setup
+@using OneZeroErp.SharedUi
+
+<PermissionPagedPage TItem="SetupFiscalYearListItem"
+                     Resource="gl.fiscal-years"
+                     Eyebrow="General Ledger"
+                     Title="Fiscal Years"
+                     Description="Define the accounting calendar used by future periods and journal transactions."
+                     CreateText="New fiscal year"
+                     NewEntityTitle="New fiscal year"
+                     EditEntityTitle="Edit fiscal year"
+                     DeleteMessage="Delete this fiscal year? Future journals will depend on the accounting calendar."
+                     EmptyMessage="Create the first fiscal year to begin configuring the accounting calendar."
+                     LoadPage="LoadPageAsync"
+                     DeleteItem="DeleteItemAsync"
+                     CreateRequested="BeginCreate"
+                     EditRequested="BeginEdit">
+    <HeaderTemplate><th scope="col">Code</th><th scope="col">Start date</th><th scope="col">End date</th><th scope="col">Status</th></HeaderTemplate>
+    <RowTemplate Context="year"><td><strong>@year.Code</strong></td><td>@year.StartDate.ToString("dd MMM yyyy")</td><td>@year.EndDate.ToString("dd MMM yyyy")</td><td><span class="status-pill status-pill--@year.Status.ToString().ToLowerInvariant()">@year.Status</span></td></RowTemplate>
+    <EditorTemplate Context="pageContext">
+        <EditForm Model="@EditModel" OnValidSubmit="@(() => SaveAsync(pageContext))" Context="editContext">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+            <div class="form-grid">
+                <label>Code<InputText @bind-Value="EditModel.Code" placeholder="FY2026" /></label>
+                <label>Status<InputSelect @bind-Value="EditModel.Status">@foreach (var status in Enum.GetValues<FiscalYearStatus>()) { <option value="@status">@status</option> }</InputSelect></label>
+                <label>Start date<InputDate @bind-Value="EditModel.StartDate" /></label>
+                <label>End date<InputDate @bind-Value="EditModel.EndDate" /></label>
+            </div>
+            <div class="entity-dialog__actions"><button class="button button--secondary" type="button" @onclick="pageContext.CloseEditor">Cancel</button><button class="button button--primary" type="submit">Save fiscal year</button></div>
+        </EditForm>
+    </EditorTemplate>
+</PermissionPagedPage>
+
+@code {
+    private SetupFiscalYearEditModel EditModel { get; set; } = new();
+
+    private Task<PageActionResult> BeginCreate()
+    {
+        EditModel = NewModel();
+        return Task.FromResult(PageActionResult.Success());
+    }
+
+    private Task<PageActionResult> BeginEdit(SetupFiscalYearListItem item)
+    {
+        EditModel = new() { Id = item.Id, CompanyId = item.CompanyId, Code = item.Code, StartDate = item.StartDate, EndDate = item.EndDate, Status = item.Status };
+        return Task.FromResult(PageActionResult.Success());
+    }
+
+    private Task<PageActionResult> SaveAsync(PermissionPagedPageContext<SetupFiscalYearListItem> context) =>
+        context.SubmitAsync(() => SaveEntityAsync(context));
+
+    private async Task<PageActionResult> SaveEntityAsync(PermissionPagedPageContext<SetupFiscalYearListItem> context)
+    {
+        var result = await SetupFiscalYearService.SaveAsync(EditModel, context.CurrentUserId);
+        return result.Succeeded ? PageActionResult.Success() : PageActionResult.Failure(result.ErrorMessage ?? "The fiscal year could not be saved.");
+    }
+
+    private async Task<PageActionResult> DeleteItemAsync(SetupFiscalYearListItem item, Guid actorUserId, CancellationToken cancellationToken)
+    {
+        var result = await SetupFiscalYearService.DeleteAsync(item.Id, actorUserId, cancellationToken);
+        return result.Succeeded ? PageActionResult.Success() : PageActionResult.Failure(result.ErrorMessage ?? "The fiscal year could not be deleted.");
+    }
+
+    private Task<PagedResult<SetupFiscalYearListItem>> LoadPageAsync(PagedQuery query, CancellationToken cancellationToken) => SetupFiscalYearService.GetPageAsync(query, cancellationToken);
+
+    private SetupFiscalYearEditModel NewModel() => new()
+    {
+        CompanyId = Guid.TryParse(Configuration["Company:DefaultCompanyId"], out var companyId) ? companyId : Guid.Empty,
+        Code = $"FY{DateTime.Today.Year}",
+        StartDate = new DateOnly(DateTime.Today.Year, 1, 1),
+        EndDate = new DateOnly(DateTime.Today.Year, 12, 31),
+        Status = FiscalYearStatus.Open
+    };
+}

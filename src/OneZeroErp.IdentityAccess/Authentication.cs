@@ -4,24 +4,26 @@ using System.Security.Cryptography;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using OneZeroErp.Application;
+using OneZeroErp.Application.Time;
 
 namespace OneZeroErp.IdentityAccess;
 
-public sealed record AppUser(Guid Id, string UserName, string DisplayName, string PasswordHash, string Role, bool IsActive = true);
+public sealed record AppUser(Guid Id, string UserName, string DisplayName, string PasswordHash, string Role, bool IsActive = true, IReadOnlyCollection<string>? Permissions = null);
 
 public interface IAppUserStore
 {
-    AppUser? FindByUserName(string userName);
+    Task<AppUser?> FindByUserNameAsync(string userName, CancellationToken cancellationToken = default);
 }
 
 public sealed class InMemoryAppUserStore(IConfiguration configuration) : IAppUserStore
 {
     private readonly AppUser? _developmentUser = CreateDevelopmentUser(configuration);
 
-    public AppUser? FindByUserName(string userName) =>
-        _developmentUser is not null && string.Equals(_developmentUser.UserName, userName, StringComparison.OrdinalIgnoreCase)
-            ? _developmentUser
-            : null;
+    public Task<AppUser?> FindByUserNameAsync(string userName, CancellationToken cancellationToken = default) =>
+        Task.FromResult(
+            _developmentUser is not null && string.Equals(_developmentUser.UserName, userName, StringComparison.OrdinalIgnoreCase)
+                ? _developmentUser
+                : null);
 
     private static AppUser? CreateDevelopmentUser(IConfiguration configuration)
     {
@@ -31,7 +33,7 @@ public sealed class InMemoryAppUserStore(IConfiguration configuration) : IAppUse
         if (string.IsNullOrWhiteSpace(password))
             password = configuration["DevelopmentSeed_Password"];
         if (string.IsNullOrWhiteSpace(password)) return null;
-        return new(Guid.NewGuid(), "admin", "Development Administrator", PasswordHasher.Hash(password), "Administrator");
+        return new(Guid.NewGuid(), "admin", "Development Administrator", PasswordHasher.Hash(password), "Administrator", true, ["gl.fiscal-years:CanView", "gl.fiscal-years:CanAdd", "gl.fiscal-years:CanEdit", "gl.fiscal-years:CanDelete"]);
     }
 }
 
@@ -63,7 +65,7 @@ public static class PasswordHasher
     }
 }
 
-public sealed class JwtTokenService(IConfiguration configuration)
+public sealed class JwtTokenService(IConfiguration configuration, IClock clock)
 {
     public string CreateToken(AppUser user)
     {
@@ -77,25 +79,28 @@ public sealed class JwtTokenService(IConfiguration configuration)
             new Claim(JwtRegisteredClaimNames.UniqueName, user.UserName),
             new Claim(ClaimTypes.Name, user.DisplayName),
             new Claim(ClaimTypes.Role, user.Role)
-        };
+        }.Concat((user.Permissions ?? Array.Empty<string>()).Select(permission => new Claim(ClaimPermissionService.PermissionClaimType, permission))).ToArray();
         var credentials = new SigningCredentials(new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(key)), SecurityAlgorithms.HmacSha256);
-        var token = new JwtSecurityToken(claims: claims, expires: DateTime.UtcNow.AddMinutes(15), signingCredentials: credentials);
+        var token = new JwtSecurityToken(claims: claims, expires: clock.UtcNow.UtcDateTime.AddMinutes(15), signingCredentials: credentials);
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 }
 
 public sealed class AppUserAuthenticationService(IAppUserStore users, JwtTokenService tokens) : IAuthenticationService
 {
-    public Task<AuthenticationResult> AuthenticateAsync(LoginRequest request, CancellationToken cancellationToken = default)
+    public async Task<AuthenticationResult> AuthenticateAsync(LoginRequest request, CancellationToken cancellationToken = default)
     {
-        var user = users.FindByUserName(request.UserName);
+        var user = await users.FindByUserNameAsync(request.UserName, cancellationToken);
         if (user is null || !user.IsActive || !PasswordHasher.Verify(request.Password, user.PasswordHash))
-            return Task.FromResult(AuthenticationResult.Failure("Invalid credentials."));
+            return AuthenticationResult.Failure("Invalid credentials.");
 
         var identity = new ClaimsIdentity("OneZeroErpCookie", ClaimTypes.Name, ClaimTypes.Role);
         identity.AddClaim(new(ClaimTypes.NameIdentifier, user.Id.ToString()));
+        identity.AddClaim(new(JwtRegisteredClaimNames.UniqueName, user.UserName));
         identity.AddClaim(new(ClaimTypes.Name, user.DisplayName));
         identity.AddClaim(new(ClaimTypes.Role, user.Role));
-        return Task.FromResult(new AuthenticationResult(true, tokens.CreateToken(user), new ClaimsPrincipal(identity), null));
+        foreach (var permission in user.Permissions ?? Array.Empty<string>())
+            identity.AddClaim(new(ClaimPermissionService.PermissionClaimType, permission));
+        return new AuthenticationResult(true, tokens.CreateToken(user), new ClaimsPrincipal(identity), null);
     }
 }

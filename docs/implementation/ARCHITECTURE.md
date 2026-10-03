@@ -30,7 +30,7 @@ If offline drafts are enabled, drafts must have an explicit local-only state, an
 
 The initial solution uses a Blazor Web App with interactive server rendering and a PWA shell. The browser experience uses an ASP.NET Core protected session cookie for reliable server-side navigation, while the custom `AppUsers` authentication service issues short-lived JWT access tokens for API and future integration callers. Tokens are not placed in browser local storage, and API authorization remains server-side.
 
-The current foundation contains typed application dashboard and module-registry contracts, a shared UI component library, an in-memory development user store, PBKDF2 password hashing, JWT issuance/validation, protected routes, login/logout endpoints, three themes, responsive shell states, and placeholder GL dashboard data. It does not contain database persistence, role/permission administration, audit persistence, or accounting behavior yet.
+The current foundation contains typed application dashboard and module-registry contracts, a shared UI component library, an in-memory development user store, PBKDF2 password hashing, JWT issuance/validation, protected routes, login/logout endpoints, three themes, responsive shell states, and placeholder GL dashboard data. It now contains the initial SQL Server persistence foundation for AppUsers, normalized user permissions, Fiscal Years, and audit events. Role/permission administration, refresh-token persistence, and accounting behavior remain deferred.
 
 ### Current solution structure
 
@@ -131,3 +131,81 @@ The shared page foundation is responsible for:
 Permission checks in the UI are a presentation concern. Every command and query must repeat authorization and business-rule checks on the server. Permission claims use the `onezero:permission` claim type and the `resource:PermissionAction` format; wildcard resource claims are supported. A missing claim is denied by default.
 
 Simple entities may render an entity form in a shared dialog. Complex entities should navigate to a dedicated route. The choice belongs to the entity page, while dialog lifecycle, confirmation, errors, and notifications remain shared behavior.
+## Shared page contracts
+
+`PagedGrid<TItem>` is a display-only generic component. It receives a strongly typed, already-paged list and render templates for headers, rows, and optional row actions. Pagination, loading, empty/error/unauthorized states, confirmation dialogs, and action orchestration remain in `PermissionPagedPage<TItem>` and `PermissionPagedPageBase<TItem>`.
+
+Entity callbacks return `PageActionResult` rather than writing page-level notifications. The shared base interprets the result, displays success or error feedback, closes simple-entity dialogs after success, refreshes the current page, and combines nested exception messages through the centralized formatting extensions. This keeps entity pages focused on their own queries, commands, and fields.
+
+`FormattingExtensions` provides shared date, time, Pakistan date-format, decimal-formatting, and exception-message helpers. Financial and display formatting must use these helpers consistently; monetary persistence remains decimal-safe and independent of display formatting.
+## UI folder organization
+
+The web host organizes Razor pages by purpose and module:
+
+```text
+src/OneZeroErp.Web/Components/
+├── Layout/                         # application layouts and shell chrome
+├── Pages/
+│   ├── ApplicationPages/           # home and cross-module dashboards
+│   ├── AuthenticationPages/        # login and authentication flows
+│   ├── SystemPages/                # error, not-found, and unauthorized pages
+│   └── ModulePages/
+│       └── GL/
+│           ├── SetupPages/         # fiscal years, chart of accounts, voucher setup
+│           ├── TransactionPages/   # journals and operational transactions
+│           ├── BankingPages/       # bank/cash and reconciliation
+│           └── ReportingPages/     # configurable GL reports
+```
+
+The Fiscal Year page is the first module page and is located at `Pages/ModulePages/GL/SetupPages/SetupFiscalYearPage.razor`. Its existing route remains `/gl/fiscal-years` so navigation links and bookmarks remain compatible. Shared reusable UI components remain in `OneZeroErp.SharedUi`; they are not copied into individual module folders.
+## Domain model boundaries
+
+GL aggregates live under `OneZeroErp.Domain.GeneralLedger` and have no dependency on EF Core, SQL Server, Blazor, JWT, or infrastructure services. They enforce accounting invariants locally: journal balance, fiscal-year range, day-lock and closed-period protection, posted-journal immutability, budget approval locking, reconciliation completion, and configurable report mappings.
+
+Persistence entities and application contracts may project these models for storage and transport, but application authorization, audit recording, and transaction coordination remain outside the domain. Domain models do not calculate financial statements; reporting services will later query posted journal lines using the configured mappings.
+## AuditableEntity convention
+
+All persisted domain entities inherit the domain `AuditableEntity` base. It provides `CompanyId`, `CreatedOn`, `CreatedBy`, `UpdatedOn`, `UpdatedBy`, `DeletedOn`, and `DeletedBy`. Mutating domain methods require an actor ID and update the metadata. Soft deletion is represented by deletion metadata; posted financial records remain immutable and must be corrected through reversal or adjustment workflows.
+
+This metadata is not a replacement for the append-only audit history. Application commands must still write an audit event containing the action, entity, actor, company, timestamp, and safe before/after summaries in the same transaction as the business change.
+
+## Chart of Accounts hierarchy
+
+`ChartOfAccount` represents one row of the requested `ChartOfAccounts` structure:
+
+- `CompanyId`
+- `AccountNo`
+- `ParentAccountNo`
+- `ParentAccountTitle`
+- `AccountLevel`
+- `AccountType`
+- `Nature`
+- `Title`
+- `Description`
+- `CreatedOn`
+- `CreatedBy`
+- `IsActive`
+
+Root accounts use account level `0` and no parent. Child accounts reference `ParentAccountNo` and must be exactly one level below their parent. `ChartOfAccounts` validates company ownership, duplicate account numbers, parent existence, and level consistency, and exposes a tree projection for UI/reporting use. `ParentAccountTitle` is retained as a denormalized display snapshot and must be refreshed when parent titles change.
+
+New account numbers are generated server-side. The first root for an account type uses `100000000` and the display title for that type (for example, `Assets`). Once a non-posting parent is selected, the next grouping child uses the next sequential number after that parent; a posting child uses the next available number by incrementing the first available digit from the left (for example, `100000000` becomes `110000000`). The UI displays these values as read-only suggestions, but the application service recalculates them during creation. The Add Account dialog presents active non-posting accounts as a recursive tree; the selected parent supplies the new account's type and hierarchy level.
+
+## Validation library decision
+
+Do not add FluentValidation to the domain project at this stage. Domain constructors and methods enforce invariants so they cannot be bypassed by another caller. Once Application commands and UI/API request models stabilize, FluentValidation may be added to the Application boundary for input shape, cross-field messages, and user-facing validation. Those validators must complement—not replace—the domain rules.
+## Voucher Type model decision
+
+Voucher types are configurable company-scoped master data, not an enum. `VoucherType` stores an auditable string `Code`, `Description`, active state, and operational requirements such as bank or cash account usage. The initial OPV, JVV, CPV, CRV, BPV, and BRV values are seed records only. Journals reference `VoucherTypeId`, allowing additional voucher types to be configured without recompiling the domain.
+## Centralized clock and timezone
+
+All runtime time access is centralized through `OneZeroErp.Application.Time.IClock`. `UtcNow` is used for persisted technical timestamps, audit events, token expiry, posting timestamps, and lock metadata. `CurrentDateTime`, `CurrentDate`, and `CurrentTime` use the configured company timezone for accounting and UI behavior.
+
+The default timezone is `Pakistan Standard Time`, configured by `Company:TimeZoneId`, with `Asia/Karachi` supported for Linux environments. Domain aggregates do not call system time directly; application services obtain the timestamp from `IClock` and pass it into domain commands. Tests can provide deterministic time through a custom `TimeProvider`.
+## Data-access foundation status
+
+The first persistence increment uses EF Core migrations against SQL Server. The initial migration is `InitialDataAccess`; the follow-up naming migration uses module-prefixed tables such as `erp.Erp_FiscalYears`, `erp.Erp_LockDate`, `gl.Gl_Setup_ChartOfAccounts`, `identity.Identity_AppUsers`, and `audit.Audit_Events`. Development startup applies pending migrations before seeding the environment-provided development administrator.
+
+`EnsureCreated` is not used for ongoing schema evolution. Any database created by the earlier bootstrap-only `EnsureCreated` path must be treated as a disposable development database or explicitly baselined through a reviewed migration procedure before shared use; it must not be silently dropped or overwritten.
+## Chart of Accounts data-access boundary
+
+Chart of Accounts persistence is exposed through `IChartOfAccountService` and `ChartOfAccountEntity` in the General Ledger application/infrastructure boundaries. The service owns paged reads, parent-account validation, account-number uniqueness, activation changes, and audit recording. It does not expose EF entities to the UI and does not implement journal posting or financial reporting.

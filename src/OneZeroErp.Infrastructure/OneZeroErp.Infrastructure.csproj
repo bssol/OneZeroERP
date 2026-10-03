@@ -1,8 +1,9 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
     <ProjectReference Include="..\OneZeroErp.Application\OneZeroErp.Application.csproj" />
     <ProjectReference Include="..\OneZeroErp.Domain\OneZeroErp.Domain.csproj" />
+    <ProjectReference Include="..\OneZeroErp.IdentityAccess\OneZeroErp.IdentityAccess.csproj" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -13,6 +14,12 @@
 
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.12" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.12" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.12" />
   </ItemGroup>
 
 </Project>

@@ -29,6 +29,8 @@ When implementation begins, update the relevant decision record before changing 
 
 - Keep business modules isolated. A module exposes application contracts, not its database tables.
 - Centralize reusable page mechanics such as permission checks, pagination, loading/error states, confirmation dialogs, and common action visibility in shared base components; entity pages should contain only entity-specific behavior.
+- Keep `PagedGrid<TItem>` display-only and return `PageActionResult` from entity callbacks so the shared base owns success/error feedback and refresh behavior.
+- Use `FormattingExtensions` for shared date, decimal, and nested-exception-message formatting.
 - Prefer explicit commands and queries, meaningful domain names, and small aggregate boundaries over generic repositories.
 - Use UTC timestamps for technical events and an explicit organization/business timezone for accounting dates.
 - Every schema change is a reviewed, forward-only migration. Never edit an applied migration.

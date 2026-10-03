@@ -1,4 +1,4 @@
-﻿namespace OneZeroErp.ComponentTests;
+namespace OneZeroErp.ComponentTests;
 
 public class UnitTest1
 {

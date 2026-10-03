@@ -1,5 +1,7 @@
 using Microsoft.Extensions.Configuration;
+using System.IdentityModel.Tokens.Jwt;
 using OneZeroErp.Application;
+using OneZeroErp.Application.Time;
 using OneZeroErp.IdentityAccess;
 using OneZeroErp.Infrastructure;
 
@@ -24,12 +26,14 @@ public sealed class AuthenticationAndDashboardTests
         {
             ["Authentication:SigningKey"] = "development-only-signing-key-that-is-long-enough"
         }).Build();
-        var service = new AppUserAuthenticationService(new StubUserStore(user), new JwtTokenService(configuration));
+        var service = new AppUserAuthenticationService(new StubUserStore(user), new JwtTokenService(configuration, new SystemClock(TimeProvider.System, TimeZoneInfo.Utc)));
 
         var result = await service.AuthenticateAsync(new LoginRequest("admin", "secret"));
 
         Assert.True(result.Succeeded);
         Assert.NotNull(result.Principal);
+        Assert.Equal("Administrator", result.Principal!.Identity!.Name);
+        Assert.Equal("admin", result.Principal.FindFirst(JwtRegisteredClaimNames.UniqueName)?.Value);
         Assert.False(string.IsNullOrWhiteSpace(result.AccessToken));
     }
 
@@ -52,6 +56,6 @@ public sealed class AuthenticationAndDashboardTests
 
     private sealed class StubUserStore(AppUser user) : IAppUserStore
     {
-        public AppUser? FindByUserName(string userName) => userName == user.UserName ? user : null;
+        public Task<AppUser?> FindByUserNameAsync(string userName, CancellationToken cancellationToken = default) => Task.FromResult<AppUser?>(userName == user.UserName ? user : null);
     }
 }

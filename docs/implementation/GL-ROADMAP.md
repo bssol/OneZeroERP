@@ -102,3 +102,40 @@ Exit gate: reports calculate from posted lines, produce a balanced trial balance
 - Dimensions/cost centers, tax, and intercompany requirements may be required before budgeting and statements; confirm scope before Phase 6.
 - Bank feeds and file formats depend on selected institutions/providers.
 - Report configuration needs governance and validation before users can publish mappings.
+
+## Fiscal Years implementation slice
+
+The first GL page is now implemented at `/gl/fiscal-years` using the shared permission-aware paged-page foundation.
+
+Implemented:
+
+- SQL Server-backed `erp.Erp_FiscalYears` persistence with unique codes.
+- Date-range validation and overlap prevention.
+- Open/closed status field.
+- Permission-controlled view, add, edit, and delete actions.
+- Responsive paged grid and simple-entity edit dialog.
+- Delete confirmation and consistent error states.
+- Append-only `audit.Audit_Events` rows written with Fiscal Year mutations.
+- Development seed administrator claims for the Fiscal Years resource only.
+
+The current development path uses the reviewed `InitialDataAccess` EF migration against SQL Server. Existing databases created by the earlier `EnsureCreated` bootstrap path require an explicit migration-baseline procedure before shared use. Add integration coverage against the deployment SQL Server instance before shared or production deployment.
+## Domain model foundation
+
+The initial domain-only foundation now contains:
+
+- Fiscal Year aggregate with normalized codes, date-range validation, open/closed state, and containment checks.
+- Chart of Accounts `Account` model with account type, parent reference, posting eligibility, and active state.
+- Standard voucher types OPV, JVV, CPV, CRV, BPV, and BRV with bank/cash requirements.
+- Draft `Journal` aggregate and `JournalLine` model with decimal-safe amounts, balanced-posting enforcement, fiscal-year/day-lock checks, and posted-state immutability.
+- `DayLock` aggregate for date-level transaction control.
+- `BankAccount`, `CashAccount`, and `BankReconciliation` models with GL linkage and completion-balance validation.
+- `Budget` and `BudgetLine` models with period validation and approval locking.
+- Configurable `FinancialReportDefinition` mappings for Notes to Accounts, Profit and Loss, and Balance Sheet without hardcoded account IDs.
+
+The persistence boundary currently remains intentionally limited to the fiscal-year and chart-of-accounts slices. The shared permission-aware frontend now exposes both setup pages, while journal, posting, locking, budget, reconciliation, and report persistence remain behind their respective domain/application boundaries. The next implementation step is to add reviewed mappings and contracts for Voucher Types without weakening the domain invariants.
+## Voucher Type model decision
+
+Voucher types are configurable company-scoped master data, not an enum. `VoucherType` stores an auditable string `Code`, `Description`, active state, and operational requirements such as bank or cash account usage. The initial OPV, JVV, CPV, CRV, BPV, and BRV values are seed records only. Journals reference `VoucherTypeId`, allowing additional voucher types to be configured without recompiling the domain.
+## Chart of Accounts data-access foundation
+
+The Chart of Accounts backend increment has SQL Server persistence mappings, application contracts, audited activation/deactivation, parent existence and one-level hierarchy validation, the `AddChartOfAccounts` migration, and the permission-aware `/gl/chart-of-accounts` setup page. Voucher Types now have the corresponding company-scoped persistence mapping, audited application service, unique company/code constraint, `AddVoucherTypes` migration, and invariant tests; the setup page and standard-type seed orchestration remain the next UI/startup increment. Accounting posting behavior remains out of scope.

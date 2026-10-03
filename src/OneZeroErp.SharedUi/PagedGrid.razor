@@ -1,27 +1,17 @@
 @typeparam TItem
 
-<section class="entity-grid" aria-live="polite">
-    @if (IsUnauthorized)
-    {
-        <div class="entity-state entity-state--unauthorized" role="status"><strong>Access restricted</strong><span>You do not have permission to view this information.</span></div>
-    }
-    else if (IsLoading)
-    {
-        <div class="entity-state" role="status"><span class="loading-spinner"></span><span>Loading records…</span></div>
-    }
-    else if (!string.IsNullOrWhiteSpace(ErrorMessage))
-    {
-        <div class="entity-state entity-state--error" role="alert"><strong>Unable to load records</strong><span>@ErrorMessage</span><button class="button button--secondary" type="button" @onclick="OnRetry">Try again</button></div>
-    }
-    else if (Items.Count == 0)
-    {
-        <div class="entity-state" role="status"><strong>No records found</strong><span>@EmptyMessage</span></div>
-    }
-    else
-    {
-        <div class="entity-grid__scroll"><table><thead><tr>@HeaderTemplate @if (ActionsTemplate is not null) { <th scope="col">Actions</th> }</tr></thead><tbody>@foreach (var item in Items) { <tr>@RowTemplate(item) @if (ActionsTemplate is not null) { <td class="entity-grid__actions">@ActionsTemplate(item)</td> }</tr> }</tbody></table></div>
-        <div class="entity-grid__footer"><span>Showing @StartIndex–@EndIndex of @TotalCount</span><div class="entity-grid__pager"><button class="button button--secondary" type="button" disabled="@(!HasPreviousPage)" @onclick="PreviousPage">Previous</button><span>Page @PageNumber of @TotalPages</span><button class="button button--secondary" type="button" disabled="@(!HasNextPage)" @onclick="NextPage">Next</button></div></div>
-    }
+<section class="entity-grid" aria-label="Data grid">
+    <div class="entity-grid__scroll">
+        <table>
+            <thead><tr>@HeaderTemplate @if (ActionsTemplate is not null) { <th scope="col">Actions</th> }</tr></thead>
+            <tbody>
+                @foreach (var item in Items)
+                {
+                    <tr>@RowTemplate(item) @if (ActionsTemplate is not null) { <td class="entity-grid__actions">@ActionsTemplate(item)</td> }</tr>
+                }
+            </tbody>
+        </table>
+    </div>
 </section>
 
 @code {
@@ -29,21 +19,4 @@
     [Parameter] public RenderFragment? HeaderTemplate { get; set; }
     [Parameter, EditorRequired] public RenderFragment<TItem> RowTemplate { get; set; } = default!;
     [Parameter] public RenderFragment<TItem>? ActionsTemplate { get; set; }
-    [Parameter] public bool IsLoading { get; set; }
-    [Parameter] public bool IsUnauthorized { get; set; }
-    [Parameter] public string? ErrorMessage { get; set; }
-    [Parameter] public string EmptyMessage { get; set; } = "There are no records to display.";
-    [Parameter] public int PageNumber { get; set; } = 1;
-    [Parameter] public int TotalPages { get; set; } = 1;
-    [Parameter] public int TotalCount { get; set; }
-    [Parameter] public EventCallback<int> PageChanged { get; set; }
-    [Parameter] public EventCallback RetryRequested { get; set; }
-
-    private bool HasPreviousPage => PageNumber > 1;
-    private bool HasNextPage => PageNumber < TotalPages;
-    private int StartIndex => TotalCount == 0 ? 0 : ((PageNumber - 1) * Math.Max(1, Items.Count)) + 1;
-    private int EndIndex => Math.Min(TotalCount, StartIndex + Items.Count - 1);
-    private Task PreviousPage() => PageChanged.InvokeAsync(PageNumber - 1);
-    private Task NextPage() => PageChanged.InvokeAsync(PageNumber + 1);
-    private Task OnRetry() => RetryRequested.InvokeAsync();
 }

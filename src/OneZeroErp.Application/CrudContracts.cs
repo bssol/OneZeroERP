@@ -35,3 +35,9 @@ public sealed record PagedResult<T>(IReadOnlyList<T> Items, int PageNumber, int 
     public bool HasPreviousPage => PageNumber > 1;
     public bool HasNextPage => PageNumber < TotalPages;
 }
+
+public sealed record PageActionResult(bool Succeeded, string? ErrorMessage = null, string? SuccessMessage = null)
+{
+    public static PageActionResult Success(string? message = null) => new(true, SuccessMessage: message);
+    public static PageActionResult Failure(string message) => new(false, message);
+}
