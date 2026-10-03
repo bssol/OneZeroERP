@@ -38,7 +38,10 @@ public sealed class DatabaseInitializer(ErpDbContext db, IConfiguration configur
 								"gl.currencies:CanEdit",
 								"gl.exchange-rates:CanView",
 								"gl.exchange-rates:CanAdd",
-								"gl.exchange-rates:CanEdit"
+								"gl.exchange-rates:CanEdit",
+								"gl.tax-configuration:CanView",
+								"gl.tax-configuration:CanAdd",
+								"gl.tax-configuration:CanEdit"
 						]),
 				new(
 						"fiscal.manager",
@@ -57,7 +60,8 @@ public sealed class DatabaseInitializer(ErpDbContext db, IConfiguration configur
 								"gl.bank-accounts:CanView",
 								"gl.cash-accounts:CanView",
 								"gl.currencies:CanView",
-								"gl.exchange-rates:CanView"
+								"gl.exchange-rates:CanView",
+								"gl.tax-configuration:CanView"
 						]),
 				new(
 						"gl.accountant",
@@ -84,7 +88,10 @@ public sealed class DatabaseInitializer(ErpDbContext db, IConfiguration configur
 								"gl.currencies:CanEdit",
 								"gl.exchange-rates:CanView",
 								"gl.exchange-rates:CanAdd",
-								"gl.exchange-rates:CanEdit"
+								"gl.exchange-rates:CanEdit",
+								"gl.tax-configuration:CanView",
+								"gl.tax-configuration:CanAdd",
+								"gl.tax-configuration:CanEdit"
 						]),
 				new(
 						"gl.viewer",
@@ -99,7 +106,8 @@ public sealed class DatabaseInitializer(ErpDbContext db, IConfiguration configur
 								"gl.bank-accounts:CanView",
 								"gl.cash-accounts:CanView",
 								"gl.currencies:CanView",
-								"gl.exchange-rates:CanView"
+								"gl.exchange-rates:CanView",
+								"gl.tax-configuration:CanView"
 						])
 	];
 

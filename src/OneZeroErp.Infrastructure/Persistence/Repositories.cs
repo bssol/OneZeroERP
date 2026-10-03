@@ -35,6 +35,7 @@ public interface IUnitOfWork
     IRepository<GL_CashAccountEntity> CashAccounts { get; }
     IRepository<GL_CurrencyEntity> Currencies { get; }
     IRepository<GL_ExchangeRateEntity> ExchangeRates { get; }
+    IRepository<GL_TaxConfigurationEntity> TaxConfigurations { get; }
     IRepository<AuditEventEntity> AuditEvents { get; }
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
@@ -100,6 +101,7 @@ public sealed class EfUnitOfWork(ErpDbContext db) : IUnitOfWork
     public IRepository<GL_CashAccountEntity> CashAccounts { get; } = new EfRepository<GL_CashAccountEntity>(db);
     public IRepository<GL_CurrencyEntity> Currencies { get; } = new EfRepository<GL_CurrencyEntity>(db);
     public IRepository<GL_ExchangeRateEntity> ExchangeRates { get; } = new EfRepository<GL_ExchangeRateEntity>(db);
+    public IRepository<GL_TaxConfigurationEntity> TaxConfigurations { get; } = new EfRepository<GL_TaxConfigurationEntity>(db);
     public IRepository<AuditEventEntity> AuditEvents { get; } = new EfRepository<AuditEventEntity>(db);
 
     public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default) => db.SaveChangesAsync(cancellationToken);

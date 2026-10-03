@@ -330,6 +330,50 @@ namespace OneZeroErp.Infrastructure.Persistence.Migrations
                     b.ToTable("Gl_Setup_ExchangeRates", "gl");
                 });
 
+            modelBuilder.Entity("OneZeroErp.Infrastructure.GeneralLedger.GL_TaxConfigurationEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateOnly>("EffectiveFrom")
+                        .HasColumnType("date");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(160)
+                        .HasColumnType("nvarchar(160)");
+
+                    b.Property<decimal>("RatePercent")
+                        .HasColumnType("decimal(9,4)");
+
+                    b.Property<string>("TaxType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+                    b.HasIndex("CompanyId", "Code").IsUnique();
+                    b.ToTable("Gl_Setup_TaxConfigurations", "gl");
+                });
+
             modelBuilder.Entity("OneZeroErp.Infrastructure.Persistence.AppUserEntity", b =>
                 {
                     b.Property<Guid>("Id")

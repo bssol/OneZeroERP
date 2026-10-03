@@ -15,6 +15,7 @@ public sealed class ErpDbContext(DbContextOptions<ErpDbContext> options) : DbCon
 	public DbSet<GL_CashAccountEntity> CashAccounts => Set<GL_CashAccountEntity>();
 	public DbSet<GL_CurrencyEntity> Currencies => Set<GL_CurrencyEntity>();
 	public DbSet<GL_ExchangeRateEntity> ExchangeRates => Set<GL_ExchangeRateEntity>();
+	public DbSet<GL_TaxConfigurationEntity> TaxConfigurations => Set<GL_TaxConfigurationEntity>();
 	public DbSet<AuditEventEntity> AuditEvents => Set<AuditEventEntity>();
 
 	protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -168,6 +169,21 @@ public sealed class ErpDbContext(DbContextOptions<ErpDbContext> options) : DbCon
 			entity.Property(x => x.UpdatedAtUtc).IsRequired();
 			entity.HasIndex(x => new { x.CompanyId, x.CurrencyId, x.EffectiveDate }).IsUnique();
 			entity.HasOne<GL_CurrencyEntity>().WithMany().HasForeignKey(x => x.CurrencyId).OnDelete(DeleteBehavior.Restrict);
+		});
+		modelBuilder.Entity<GL_TaxConfigurationEntity>(entity =>
+		{
+			entity.ToTable("Gl_Setup_TaxConfigurations", "gl");
+			entity.HasKey(x => x.Id);
+			entity.Property(x => x.CompanyId).IsRequired();
+			entity.Property(x => x.Code).HasMaxLength(30).IsRequired();
+			entity.Property(x => x.Name).HasMaxLength(160).IsRequired();
+			entity.Property(x => x.TaxType).HasConversion<string>().HasMaxLength(20).IsRequired();
+			entity.Property(x => x.RatePercent).HasColumnType("decimal(9,4)").IsRequired();
+			entity.Property(x => x.EffectiveFrom).HasColumnType("date").IsRequired();
+			entity.Property(x => x.IsActive).IsRequired();
+			entity.Property(x => x.CreatedAtUtc).IsRequired();
+			entity.Property(x => x.UpdatedAtUtc).IsRequired();
+			entity.HasIndex(x => new { x.CompanyId, x.Code }).IsUnique();
 		});
 		modelBuilder.Entity<AuditEventEntity>(entity =>
 		{

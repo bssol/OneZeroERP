@@ -32,6 +32,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ICashAccountService, BankCashAccountService>();
         services.AddScoped<ICurrencyService, CurrencyService>();
         services.AddScoped<IExchangeRateService, CurrencyService>();
+        services.AddScoped<ITaxConfigurationService, TaxConfigurationService>();
         services.AddScoped<IAppUserStore, SqlAppUserStore>();
         services.AddScoped<DatabaseInitializer>();
         return services;

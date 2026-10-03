@@ -1,0 +1,69 @@
+@page "/gl/tax-configurations"
+@attribute [Authorize]
+@inject ITaxConfigurationService TaxConfigurationService
+@inject IConfiguration Configuration
+@using OneZeroErp.Application.GeneralLedger
+@using OneZeroErp.Domain.GeneralLedger.Setup
+@using OneZeroErp.SharedUi
+
+<PermissionPagedPage TItem="TaxConfigurationListItem"
+                     Resource="gl.tax-configuration"
+                     Eyebrow="General Ledger"
+                     Title="Tax Configuration"
+                     Description="Define reusable sales, purchase, and withholding tax rates for future transaction workflows."
+                     CreateText="New tax configuration"
+                     NewEntityTitle="New tax configuration"
+                     EditEntityTitle="Edit tax configuration"
+                     EmptyMessage="Create a tax configuration before entering tax-aware transactions."
+                     ShowDeleteAction="false"
+                     LoadPage="LoadPageAsync"
+                     DeleteItem="DeleteItemAsync"
+                     CreateRequested="BeginCreate"
+                     EditRequested="BeginEdit">
+    <HeaderTemplate><th scope="col">Code</th><th scope="col">Tax configuration</th><th scope="col">Type</th><th scope="col">Rate</th><th scope="col">Effective from</th><th scope="col">Status</th></HeaderTemplate>
+    <RowTemplate Context="tax"><td><strong>@tax.Code</strong></td><td>@tax.Name</td><td>@tax.TaxType</td><td>@tax.RatePercent.ToString("0.####")%</td><td>@tax.EffectiveFrom.ToString("dd MMM yyyy")</td><td><span class="status-pill status-pill--@(tax.IsActive ? "open" : "closed")">@(tax.IsActive ? "Active" : "Inactive")</span></td></RowTemplate>
+    <EditorTemplate Context="pageContext">
+        <EditForm Model="@EditModel" OnValidSubmit="@(() => SaveAsync(pageContext))" Context="editContext">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+            <div class="form-grid">
+                <label>Code<InputText @bind-Value="EditModel.Code" placeholder="VAT-15" /></label>
+                <label>Tax type<InputSelect @bind-Value="EditModel.TaxType">@foreach (var taxType in Enum.GetValues<GL_TaxType>()) { <option value="@taxType">@taxType</option> }</InputSelect></label>
+                <label class="form-grid__full">Name<InputText @bind-Value="EditModel.Name" placeholder="Standard sales VAT" /></label>
+                <label>Rate percent<InputNumber @bind-Value="EditModel.RatePercent" step="0.0001" /></label>
+                <label>Effective from<InputDate @bind-Value="EditModel.EffectiveFrom" /></label>
+                <label class="checkbox-field"><InputCheckbox @bind-Value="EditModel.IsActive" /> Active</label>
+            </div>
+            <p class="form-hint">Rates are stored as percentages from 0 to 100 and are applied by future transaction workflows according to their effective date.</p>
+            <div class="entity-dialog__actions"><button class="button button--secondary" type="button" @onclick="pageContext.CloseEditor">Cancel</button><button class="button button--primary" type="submit">Save tax configuration</button></div>
+        </EditForm>
+    </EditorTemplate>
+</PermissionPagedPage>
+
+@code {
+    private TaxConfigurationEditModel EditModel { get; set; } = new();
+    private Guid DefaultCompanyId => Guid.TryParse(Configuration["Company:DefaultCompanyId"], out var companyId) ? companyId : Guid.Empty;
+
+    private Task<PageActionResult> BeginCreate()
+    {
+        EditModel = new() { CompanyId = DefaultCompanyId, EffectiveFrom = DateOnly.FromDateTime(DateTime.Today) };
+        return Task.FromResult(PageActionResult.Success());
+    }
+
+    private Task<PageActionResult> BeginEdit(TaxConfigurationListItem item)
+    {
+        EditModel = new() { Id = item.Id, CompanyId = item.CompanyId, Code = item.Code, Name = item.Name, TaxType = item.TaxType, RatePercent = item.RatePercent, EffectiveFrom = item.EffectiveFrom, IsActive = item.IsActive };
+        return Task.FromResult(PageActionResult.Success());
+    }
+
+    private Task<PageActionResult> SaveAsync(PermissionPagedPageContext<TaxConfigurationListItem> context) => context.SubmitAsync(async () =>
+    {
+        var result = await TaxConfigurationService.SaveAsync(EditModel, context.CurrentUserId);
+        return result.Succeeded ? PageActionResult.Success() : PageActionResult.Failure(result.ErrorMessage ?? "The tax configuration could not be saved.");
+    });
+
+    private Task<PageActionResult> DeleteItemAsync(TaxConfigurationListItem item, Guid actorUserId, CancellationToken cancellationToken) =>
+        Task.FromResult(PageActionResult.Failure("Tax configurations are deactivated instead of deleted."));
+
+    private Task<PagedResult<TaxConfigurationListItem>> LoadPageAsync(PagedQuery query, CancellationToken cancellationToken) => TaxConfigurationService.GetPageAsync(DefaultCompanyId, query, cancellationToken);
+}
