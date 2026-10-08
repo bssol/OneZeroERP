@@ -32,7 +32,8 @@ public sealed record ApplicationDashboardModel(
 
 public sealed record LoginRequest(string UserName, string Password);
 
-public sealed record AuthenticationResult(bool Succeeded, string? AccessToken, System.Security.Claims.ClaimsPrincipal? Principal, string? Error)
+public sealed record AuthenticationResult(bool Succeeded, string? AccessToken, System.Security.Claims.ClaimsPrincipal? Principal, string? Error,
+    string? RefreshToken = null, DateTimeOffset? SessionExpiresAtUtc = null)
 {
     public static AuthenticationResult Failure(string error) => new(false, null, null, error);
 }

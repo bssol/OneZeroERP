@@ -1,0 +1,189 @@
+@page "/gl/vouchers"
+@attribute [Authorize]
+@inject IVoucherDraftService VoucherDraftService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IClock Clock
+@using System.Security.Claims
+@using OneZeroErp.Application.GeneralLedger
+@using OneZeroErp.Application.Identity
+@using OneZeroErp.Application.Time
+
+
+<PermissionPagedPage TItem="VoucherDraftListItem"
+                     Resource="gl.vouchers" Eyebrow="General Ledger" Title="Voucher drafts"
+                     Description="Enter debit and credit lines or use fast payment and receipt entry. Drafts do not affect financial reports."
+                     CreateText="New voucher" NewEntityTitle="Create voucher draft" EditEntityTitle="Edit voucher draft"
+                     EmptyMessage="No voucher drafts yet." ShowDeleteAction="false" DialogCssClass="voucher-dialog"
+                     LoadPage="LoadPageAsync" DeleteItem="DeleteItemAsync" CreateRequested="BeginCreateAsync" EditRequested="BeginEditAsync">
+    <HeaderTemplate><th scope="col">Voucher</th><th scope="col">Date</th><th scope="col">Type</th><th scope="col">Narration</th><th scope="col">Debit</th><th scope="col">Credit</th></HeaderTemplate>
+    <RowTemplate Context="voucher">
+        <td><strong>@voucher.Number</strong></td><td>@voucher.TransactionDate</td><td>@voucher.VoucherType</td>
+        <td>@voucher.Description</td><td>@voucher.TotalDebit.ToString("N2")</td><td>@voucher.TotalCredit.ToString("N2")</td>
+    </RowTemplate>
+    <EditorTemplate Context="pageContext">
+        <EditForm Model="@EditModel" OnValidSubmit="@(() => SaveAsync(pageContext))" Context="editContext">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+            <div class="form-grid">
+                <label>Voucher type
+                    <InputSelect @bind-Value="EditModel.VoucherTypeId" @bind-Value:after="OnVoucherTypeChanged" disabled="@(EditModel.Id.HasValue)">
+                        <option value="@Guid.Empty">Select type</option>
+                        @foreach (var type in Options.VoucherTypes) { <option value="@type.Id">@type.Label</option> }
+                    </InputSelect>
+                </label>
+                <label>Voucher date<InputDate @bind-Value="EditModel.TransactionDate" /></label>
+                <label>Fiscal year
+                    <InputSelect @bind-Value="EditModel.FiscalYearId" disabled="@(EditModel.Id.HasValue)">
+                        <option value="@Guid.Empty">Select year</option>
+                        @foreach (var year in Options.FiscalYears) { <option value="@year.Id">@year.Label</option> }
+                    </InputSelect>
+                </label>
+                <label>Currency
+                    <InputSelect @bind-Value="EditModel.CurrencyId">
+                        <option value="@Guid.Empty">Select base currency</option>
+                        @foreach (var currency in Options.Currencies) { <option value="@currency.Id">@currency.Label</option> }
+                    </InputSelect>
+                </label>
+                <label class="form-grid__full">Voucher narration<InputText @bind-Value="EditModel.Description" placeholder="Purpose of this voucher" /></label>
+            </div>
+
+            <div class="voucher-mode" role="group" aria-label="Entry mode">
+                <button class="button @(EditModel.Mode == VoucherEntryMode.Standard ? "button--primary" : "button--secondary")" type="button" @onclick="() => SetMode(VoucherEntryMode.Standard)">Debit / Credit grid</button>
+                @if (SelectedType?.FastMode is VoucherEntryMode.FastPayment or VoucherEntryMode.FastReceipt)
+                {
+                    <button class="button @(EditModel.Mode != VoucherEntryMode.Standard ? "button--primary" : "button--secondary")" type="button" @onclick="() => SetMode(SelectedType.FastMode)">Fast @(SelectedType.FastMode == VoucherEntryMode.FastPayment ? "payment" : "receipt")</button>
+                }
+            </div>
+            @if (!string.IsNullOrWhiteSpace(ModeNotice)) { <div class="entity-message entity-message--error" role="alert">@ModeNotice</div> }
+
+            @if (EditModel.Mode != VoucherEntryMode.Standard)
+            {
+                <div class="form-grid voucher-source">
+                    <label>@(SelectedType?.RequiresBank == true ? "Bank account" : "Cash account")
+                        <InputSelect @bind-Value="EditModel.SourceAccountId">
+                            <option value="@Guid.Empty">Select source account</option>
+                            @foreach (var source in SourceOptions) { <option value="@source.GlAccountId">@source.Label</option> }
+                        </InputSelect>
+                    </label>
+                    <p>The source account receives the balancing @(EditModel.Mode == VoucherEntryMode.FastPayment ? "credit" : "debit") line when saved.</p>
+                </div>
+            }
+
+            <div class="voucher-lines-scroll">
+                <table class="voucher-lines">
+                    <thead><tr><th scope="col">Line</th><th scope="col">Account</th><th scope="col">Narration</th>
+                        @if (EditModel.Mode == VoucherEntryMode.Standard) { <th scope="col">Debit</th><th scope="col">Credit</th> }
+                        else { <th scope="col">Amount</th> }
+                        <th scope="col"></th></tr></thead>
+                    <tbody>
+                        @for (var index = 0; index < EditModel.Lines.Count; index++)
+                        {
+                            var line = EditModel.Lines[index];
+                            <tr @key="line">
+                                <td>@(index + 1)</td>
+                                <td><BsChartOfAccounts Items="@Options.Accounts"
+                                                       @bind-Value="line.AccountId"
+                                                       Placeholder="Select account"
+                                                       AriaLabel="@($"Account for voucher line {index + 1}")" /></td>
+                                <td><InputText aria-label="Line narration" @bind-Value="line.Narration" /></td>
+                                <td><InputNumber aria-label="@(EditModel.Mode == VoucherEntryMode.Standard ? "Debit" : "Amount")" @bind-Value="line.Debit" step="0.0001" min="0" /></td>
+                                @if (EditModel.Mode == VoucherEntryMode.Standard) { <td><InputNumber aria-label="Credit" @bind-Value="line.Credit" step="0.0001" min="0" /></td> }
+                                <td><button class="icon-button" type="button" aria-label="Remove line" @onclick="() => RemoveLine(line)">×</button></td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot><tr><th colspan="3">Totals</th><td>@TotalDebit.ToString("N2")</td>
+                        @if (EditModel.Mode == VoucherEntryMode.Standard) { <td>@TotalCredit.ToString("N2")</td> }
+                        <td></td></tr></tfoot>
+                </table>
+            </div>
+            <div class="voucher-toolbar"><button class="button button--secondary" type="button" @onclick="AddLine">Add line</button>
+                <span>@(EditModel.Mode == VoucherEntryMode.Standard && TotalDebit != TotalCredit ? "Unbalanced drafts can be saved; posting will require equal totals." : "Draft only · not posted")</span></div>
+            <div class="entity-dialog__actions"><button class="button button--secondary" type="button" @onclick="pageContext.CloseEditor">Cancel</button>
+                <button class="button button--primary" type="submit">Save draft</button></div>
+        </EditForm>
+    </EditorTemplate>
+</PermissionPagedPage>
+
+@code {
+    private VoucherDraftEditModel EditModel { get; set; } = new();
+    private VoucherDraftOptions Options { get; set; } = new([], [], [], [], [], []);
+    private Guid CompanyId;
+    private Guid ActorUserId;
+    private Guid PreviousVoucherTypeId;
+    private string? ModeNotice;
+    private VoucherDraftOption? SelectedType => Options.VoucherTypes.FirstOrDefault(x => x.Id == EditModel.VoucherTypeId);
+    private IReadOnlyList<VoucherDraftOption> SourceOptions => SelectedType?.RequiresBank == true ? Options.BankAccounts : Options.CashAccounts;
+    private decimal TotalDebit => EditModel.Mode == VoucherEntryMode.Standard ? EditModel.Lines.Sum(x => x.Debit) : EditModel.Lines.Sum(x => x.Debit);
+    private decimal TotalCredit => EditModel.Mode == VoucherEntryMode.Standard ? EditModel.Lines.Sum(x => x.Credit) : EditModel.Lines.Sum(x => x.Debit);
+
+    protected override async Task OnInitializedAsync()
+    {
+      await base.OnInitializedAsync();
+        var user = (await AuthenticationStateProvider.GetAuthenticationStateAsync()).User;
+        Guid.TryParse(user.FindFirstValue(IdentityClaims.CompanyId), out CompanyId);
+        Guid.TryParse(user.FindFirstValue(ClaimTypes.NameIdentifier), out ActorUserId);
+    }
+
+    private async Task<PageActionResult> BeginCreateAsync()
+    {
+        Options = await VoucherDraftService.GetOptionsAsync(CompanyId, ActorUserId);
+        EditModel = new VoucherDraftEditModel { CompanyId = CompanyId, TransactionDate = Clock.CurrentDate,
+            FiscalYearId = Options.FiscalYears.FirstOrDefault()?.Id ?? Guid.Empty,
+            CurrencyId = Options.Currencies.FirstOrDefault()?.Id ?? Guid.Empty };
+        ModeNotice = null;
+        PreviousVoucherTypeId = Guid.Empty;
+        return PageActionResult.Success();
+    }
+
+    private async Task<PageActionResult> BeginEditAsync(VoucherDraftListItem item)
+    {
+        Options = await VoucherDraftService.GetOptionsAsync(CompanyId, ActorUserId);
+        var model = await VoucherDraftService.GetAsync(CompanyId, ActorUserId, item.Id);
+        if (model is null) return PageActionResult.Failure("The draft is no longer available.");
+        EditModel = model;
+        ModeNotice = null;
+        PreviousVoucherTypeId = model.VoucherTypeId;
+        return PageActionResult.Success();
+    }
+
+    private Task<PagedResult<VoucherDraftListItem>> LoadPageAsync(PagedQuery query, CancellationToken cancellationToken) =>
+        VoucherDraftService.GetPageAsync(CompanyId, ActorUserId, query, cancellationToken);
+    private Task<PageActionResult> DeleteItemAsync(VoucherDraftListItem item, Guid actorUserId, CancellationToken cancellationToken) =>
+        Task.FromResult(PageActionResult.Failure("Draft deletion is not available."));
+    private Task<PageActionResult> SaveAsync(PermissionPagedPageContext<VoucherDraftListItem> context) => context.SubmitAsync(async () =>
+    {
+        var result = await VoucherDraftService.SaveAsync(EditModel, context.CurrentUserId);
+        return result.Succeeded ? PageActionResult.Success($"Voucher {result.Number} saved as a draft.") :
+            PageActionResult.Failure(result.ErrorMessage ?? "The voucher could not be saved.");
+    });
+    private void AddLine() => EditModel.Lines.Add(new());
+    private void RemoveLine(VoucherDraftLineModel line) => EditModel.Lines.Remove(line);
+    private void OnVoucherTypeChanged()
+    {
+        if (EditModel.Mode != VoucherEntryMode.Standard && HasEnteredLines)
+        {
+            EditModel.VoucherTypeId = PreviousVoucherTypeId;
+            ModeNotice = "Remove entered lines before changing a fast-entry voucher type.";
+            return;
+        }
+        PreviousVoucherTypeId = EditModel.VoucherTypeId;
+        ModeNotice = null;
+        EditModel.Mode = VoucherEntryMode.Standard;
+        EditModel.SourceAccountId = Guid.Empty;
+    }
+    private bool HasEnteredLines => EditModel.Lines.Any(x => x.AccountId != Guid.Empty || x.Debit != 0m || x.Credit != 0m || !string.IsNullOrWhiteSpace(x.Narration));
+    private void SetMode(VoucherEntryMode mode)
+    {
+        if (EditModel.Mode == mode) return;
+        if (HasEnteredLines)
+        {
+            ModeNotice = "Remove entered lines before switching input mode.";
+            return;
+        }
+        ModeNotice = null;
+        EditModel.Mode = mode;
+        EditModel.SourceAccountId = Guid.Empty;
+        EditModel.Lines = [new(), new()];
+    }
+}

@@ -1,0 +1,17 @@
+<EntityDropdown TItem="DayLockListItem" TValue="Guid"
+                Items="@Items" Value="@Value" ValueChanged="@ValueChanged" ItemSelected="@ItemSelected"
+                ValueSelector="@(item => item.Id)" TextSelector="@(item => $"{item.FiscalYearCode} — {item.Date:yyyy-MM-dd} · {(item.IsLocked ? "Locked" : "Open")}")"
+                Placeholder="@Placeholder" SearchPlaceholder="Search day lock..."
+                SearchAriaLabel="Search day locks" AriaLabel="Day locks" NoResultsText="No matching day locks."
+                Disabled="@Disabled" DebounceMilliseconds="@DebounceMilliseconds" CssClass="@CssClass" />
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<DayLockListItem> Items { get; set; } = Array.Empty<DayLockListItem>();
+    [Parameter] public Guid Value { get; set; }
+    [Parameter] public EventCallback<Guid> ValueChanged { get; set; }
+    [Parameter] public EventCallback<DayLockListItem> ItemSelected { get; set; }
+    [Parameter] public string Placeholder { get; set; } = "Select day lock";
+    [Parameter] public string CssClass { get; set; } = string.Empty;
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public int DebounceMilliseconds { get; set; } = 250;
+}

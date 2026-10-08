@@ -1,0 +1,17 @@
+<EntityDropdown TItem="SetupFiscalYearListItem" TValue="Guid"
+                Items="@Items" Value="@Value" ValueChanged="@ValueChanged" ItemSelected="@ItemSelected"
+                ValueSelector="@(item => item.Id)" TextSelector="@(item => $"{item.Code} — {item.StartDate:yyyy-MM-dd} to {item.EndDate:yyyy-MM-dd}")"
+                Placeholder="@Placeholder" SearchPlaceholder="Search fiscal year..."
+                SearchAriaLabel="Search fiscal years" AriaLabel="Fiscal years" NoResultsText="No matching fiscal years."
+                Disabled="@Disabled" DebounceMilliseconds="@DebounceMilliseconds" CssClass="@CssClass" />
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<SetupFiscalYearListItem> Items { get; set; } = Array.Empty<SetupFiscalYearListItem>();
+    [Parameter] public Guid Value { get; set; }
+    [Parameter] public EventCallback<Guid> ValueChanged { get; set; }
+    [Parameter] public EventCallback<SetupFiscalYearListItem> ItemSelected { get; set; }
+    [Parameter] public string Placeholder { get; set; } = "Select fiscal year";
+    [Parameter] public string CssClass { get; set; } = string.Empty;
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public int DebounceMilliseconds { get; set; } = 250;
+}

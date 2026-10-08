@@ -2,6 +2,18 @@
 
 This roadmap sequences GL work after the platform bootstrap. It is intentionally a plan, not an implementation specification that authorizes feature coding.
 
+## Current owner direction — 2026-10-07
+
+After review of local bootstrap evidence, the owner directed voucher creation to
+continue while hosted CI, native installation, and final release acceptance remain
+open; see [BOOTSTRAP-EVIDENCE.md](BOOTSTRAP-EVIDENCE.md). The voucher creation slice
+includes the standard `LineNo | Account | Narration | Debit | Credit` grid **and**
+fast payment/receipt entry in its first build. Fast mode selects one bank/cash
+account in the header and generates its balancing entry from counterpart amounts.
+Both modes must use the same journal model, precision rules, authorization,
+fiscal/day controls, and audit transaction. Draft create/edit/list and both input
+modes are implemented. Posting and reporting still require the Phase 3 controls.
+
 ## Phase 0 — decisions and foundation
 
 Dependencies: product-owner approval of the decisions in `ERP-VISION.md`; completion of `BOOTSTRAP-PLAN.md`.

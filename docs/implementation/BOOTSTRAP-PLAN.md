@@ -4,6 +4,18 @@
 
 Create a secure, testable, observable modular-monolith foundation without implementing GL business features. The bootstrap is complete only when the application can run locally, authenticate a test user, apply an empty database schema, execute a protected request, and prove transactional audit/outbox behavior.
 
+## Current acceptance record (2026-10-06)
+
+See [BOOTSTRAP-EVIDENCE.md](BOOTSTRAP-EVIDENCE.md) and
+[ADR 0001](../decisions/0001-bootstrap-completion.md) for the current implementation,
+local validation, explicit deferrals, and remaining acceptance items. The owner has
+requested bootstrap completion before vouchers. Historical status paragraphs below
+describe earlier increments; they do not override the current evidence record.
+Hosted CI execution, native PWA install verification, and owner sign-off remain open.
+On 2026-10-07 the owner directed voucher creation to continue after local
+verification. ADR 0002 scopes that work to drafts; the open items remain release
+gates and are not marked complete by this exception.
+
 ## Workstream 1 — approve the baseline
 
 Record decisions for organization/entity scope, approval workflow, currency, fiscal calendar, identity provider, deployment target, bank inputs, AI data policy, retention, and non-functional targets. Capture each as an ADR with owner and date.
@@ -113,15 +125,15 @@ The identity foundation must include the custom `AppUsers` table and any approve
 
 - [ ] Product and architecture decisions requiring approval are resolved or explicitly deferred.
 - [ ] Solution builds with no GL feature behavior.
-- [ ] Local SQL Server starts reproducibly.
-- [ ] Empty database migration applies successfully.
-- [ ] Protected endpoint accepts an authorized test identity and rejects an unauthorized one.
-- [ ] Custom `AppUsers` authentication issues short-lived JWTs and securely handles refresh/revocation.
+- [x] Local SQL Server starts reproducibly.
+- [x] Empty database migration applies successfully.
+- [x] Protected endpoint accepts an authorized test identity and rejects an unauthorized one.
+- [x] Custom `AppUsers` authentication issues short-lived JWTs and securely handles refresh/revocation.
 - [ ] Blazor PWA installs, updates, and clears sensitive client state on logout/account change.
-- [ ] Offline behavior, if enabled, is limited to approved drafts and never represents a posted transaction.
-- [ ] Audit and outbox records commit atomically in a test transaction.
+- [x] Offline behavior, if enabled, is limited to approved drafts and never represents a posted transaction. (Financial offline entry is disabled.)
+- [x] Audit and outbox records commit atomically in a test transaction.
 - [ ] CI runs formatting, static analysis, unit tests, integration tests, architecture tests, and migration checks.
-- [ ] Local setup, test data, secrets, and troubleshooting are documented.
+- [x] Local setup, test data, secrets, and troubleshooting are documented.
 - [ ] Owner signs off that GL implementation may begin.
 
 ## Foundation implementation status

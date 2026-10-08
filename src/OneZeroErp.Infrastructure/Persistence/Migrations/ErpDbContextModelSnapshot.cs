@@ -62,6 +62,105 @@ namespace OneZeroErp.Infrastructure.Persistence.Migrations
                     b.ToTable("Erp_FiscalYears", "erp");
                 });
 
+            modelBuilder.Entity("OneZeroErp.Infrastructure.GeneralLedger.GL_BankAccountEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AccountNumber")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<string>("BankName")
+                        .IsRequired()
+                        .HasMaxLength(160)
+                        .HasColumnType("nvarchar(160)");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid>("GlAccountId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(160)
+                        .HasColumnType("nvarchar(160)");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompanyId", "Code")
+                        .IsUnique();
+
+                    b.HasIndex("CompanyId", "GlAccountId")
+                        .IsUnique();
+
+                    b.ToTable("Gl_Setup_BankAccounts", "gl");
+                });
+
+            modelBuilder.Entity("OneZeroErp.Infrastructure.GeneralLedger.GL_CashAccountEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid>("GlAccountId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Location")
+                        .IsRequired()
+                        .HasMaxLength(160)
+                        .HasColumnType("nvarchar(160)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(160)
+                        .HasColumnType("nvarchar(160)");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompanyId", "Code")
+                        .IsUnique();
+
+                    b.HasIndex("CompanyId", "GlAccountId")
+                        .IsUnique();
+
+                    b.ToTable("Gl_Setup_CashAccounts", "gl");
+                });
+
             modelBuilder.Entity("OneZeroErp.Infrastructure.GeneralLedger.GL_ChartOfAccountEntity", b =>
                 {
                     b.Property<Guid>("Id")
@@ -120,137 +219,6 @@ namespace OneZeroErp.Infrastructure.Persistence.Migrations
                     b.ToTable("Gl_Setup_ChartOfAccounts", "gl");
                 });
 
-            modelBuilder.Entity("OneZeroErp.Infrastructure.GeneralLedger.GL_VoucherTypeEntity", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Code")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
-                    b.Property<Guid>("CompanyId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTimeOffset>("CreatedAtUtc")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("RequiresBankAccount")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("RequiresCashAccount")
-                        .HasColumnType("bit");
-
-                    b.Property<DateTimeOffset>("UpdatedAtUtc")
-                        .HasColumnType("datetimeoffset");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CompanyId", "Code")
-                        .IsUnique();
-
-                    b.ToTable("Gl_Setup_VoucherTypes", "gl");
-                });
-
-            modelBuilder.Entity("OneZeroErp.Infrastructure.GeneralLedger.GL_BankAccountEntity", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("AccountNumber")
-                        .IsRequired()
-                        .HasMaxLength(80)
-                        .HasColumnType("nvarchar(80)");
-
-                    b.Property<string>("BankName")
-                        .IsRequired()
-                        .HasMaxLength(160)
-                        .HasColumnType("nvarchar(160)");
-
-                    b.Property<string>("Code")
-                        .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)");
-
-                    b.Property<Guid>("CompanyId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTimeOffset>("CreatedAtUtc")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<Guid>("GlAccountId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(160)
-                        .HasColumnType("nvarchar(160)");
-
-                    b.Property<DateTimeOffset>("UpdatedAtUtc")
-                        .HasColumnType("datetimeoffset");
-
-                    b.HasKey("Id");
-                    b.HasIndex("CompanyId", "Code").IsUnique();
-                    b.HasIndex("CompanyId", "GlAccountId").IsUnique();
-                    b.ToTable("Gl_Setup_BankAccounts", "gl");
-                });
-
-            modelBuilder.Entity("OneZeroErp.Infrastructure.GeneralLedger.GL_CashAccountEntity", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Code")
-                        .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)");
-
-                    b.Property<Guid>("CompanyId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTimeOffset>("CreatedAtUtc")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<Guid>("GlAccountId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Location")
-                        .IsRequired()
-                        .HasMaxLength(160)
-                        .HasColumnType("nvarchar(160)");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(160)
-                        .HasColumnType("nvarchar(160)");
-
-                    b.Property<DateTimeOffset>("UpdatedAtUtc")
-                        .HasColumnType("datetimeoffset");
-
-                    b.HasKey("Id");
-                    b.HasIndex("CompanyId", "Code").IsUnique();
-                    b.HasIndex("CompanyId", "GlAccountId").IsUnique();
-                    b.ToTable("Gl_Setup_CashAccounts", "gl");
-                });
-
             modelBuilder.Entity("OneZeroErp.Infrastructure.GeneralLedger.GL_CurrencyEntity", b =>
                 {
                     b.Property<Guid>("Id")
@@ -265,11 +233,11 @@ namespace OneZeroErp.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("CompanyId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<int>("DecimalPlaces")
-                        .HasColumnType("int");
-
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("DecimalPlaces")
+                        .HasColumnType("int");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
@@ -291,7 +259,10 @@ namespace OneZeroErp.Infrastructure.Persistence.Migrations
                         .HasColumnType("datetimeoffset");
 
                     b.HasKey("Id");
-                    b.HasIndex("CompanyId", "Code").IsUnique();
+
+                    b.HasIndex("CompanyId", "Code")
+                        .IsUnique();
+
                     b.ToTable("Gl_Setup_Currencies", "gl");
                 });
 
@@ -304,11 +275,11 @@ namespace OneZeroErp.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("CompanyId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid>("CurrencyId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid>("CurrencyId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<DateOnly>("EffectiveDate")
                         .HasColumnType("date");
@@ -320,14 +291,122 @@ namespace OneZeroErp.Infrastructure.Persistence.Migrations
                         .HasColumnType("datetimeoffset");
 
                     b.HasKey("Id");
-                    b.HasIndex("CompanyId", "CurrencyId", "EffectiveDate").IsUnique();
+
                     b.HasIndex("CurrencyId");
-                    b.HasOne("OneZeroErp.Infrastructure.GeneralLedger.GL_CurrencyEntity", null)
-                        .WithMany()
-                        .HasForeignKey("CurrencyId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+
+                    b.HasIndex("CompanyId", "CurrencyId", "EffectiveDate")
+                        .IsUnique();
+
                     b.ToTable("Gl_Setup_ExchangeRates", "gl");
+                });
+
+            modelBuilder.Entity("OneZeroErp.Infrastructure.GeneralLedger.GL_JournalEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CurrencyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<Guid>("FiscalYearId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Number")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<int>("SequenceNumber")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
+
+                    b.Property<DateOnly>("TransactionDate")
+                        .HasColumnType("date");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid>("UpdatedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("VoucherTypeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CurrencyId");
+
+                    b.HasIndex("FiscalYearId");
+
+                    b.HasIndex("VoucherTypeId");
+
+                    b.HasIndex("CompanyId", "Number")
+                        .IsUnique();
+
+                    b.HasIndex("CompanyId", "TransactionDate");
+
+                    b.HasIndex("CompanyId", "VoucherTypeId", "FiscalYearId", "SequenceNumber")
+                        .IsUnique();
+
+                    b.ToTable("Gl_Journals", "gl");
+                });
+
+            modelBuilder.Entity("OneZeroErp.Infrastructure.GeneralLedger.GL_JournalLineEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Credit")
+                        .HasColumnType("decimal(19,4)");
+
+                    b.Property<decimal>("Debit")
+                        .HasColumnType("decimal(19,4)");
+
+                    b.Property<Guid>("JournalId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("LineNumber")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Narration")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AccountId");
+
+                    b.HasIndex("JournalId", "LineNumber")
+                        .IsUnique();
+
+                    b.ToTable("Gl_JournalLines", "gl", t =>
+                        {
+                            t.HasCheckConstraint("CK_JournalLine_OneSide", "([Debit] > 0 AND [Credit] = 0) OR ([Credit] > 0 AND [Debit] = 0)");
+                        });
                 });
 
             modelBuilder.Entity("OneZeroErp.Infrastructure.GeneralLedger.GL_TaxConfigurationEntity", b =>
@@ -370,14 +449,62 @@ namespace OneZeroErp.Infrastructure.Persistence.Migrations
                         .HasColumnType("datetimeoffset");
 
                     b.HasKey("Id");
-                    b.HasIndex("CompanyId", "Code").IsUnique();
+
+                    b.HasIndex("CompanyId", "Code")
+                        .IsUnique();
+
                     b.ToTable("Gl_Setup_TaxConfigurations", "gl");
+                });
+
+            modelBuilder.Entity("OneZeroErp.Infrastructure.GeneralLedger.GL_VoucherTypeEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("RequiresBankAccount")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("RequiresCashAccount")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompanyId", "Code")
+                        .IsUnique();
+
+                    b.ToTable("Gl_Setup_VoucherTypes", "gl");
                 });
 
             modelBuilder.Entity("OneZeroErp.Infrastructure.Persistence.AppUserEntity", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CompanyId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTimeOffset>("CreatedAtUtc")
@@ -388,8 +515,14 @@ namespace OneZeroErp.Infrastructure.Persistence.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
+                    b.Property<int>("FailedLoginCount")
+                        .HasColumnType("int");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
+
+                    b.Property<DateTimeOffset?>("LockedUntilUtc")
+                        .HasColumnType("datetimeoffset");
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()
@@ -439,6 +572,26 @@ namespace OneZeroErp.Infrastructure.Persistence.Migrations
                     b.ToTable("Identity_AppUserPermissions", "identity");
                 });
 
+            modelBuilder.Entity("OneZeroErp.Infrastructure.Persistence.AuditDeliveryEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("AuditEventId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("DeliveredAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AuditEventId")
+                        .IsUnique();
+
+                    b.ToTable("Platform_AuditDeliveries", "platform");
+                });
+
             modelBuilder.Entity("OneZeroErp.Infrastructure.Persistence.AuditEventEntity", b =>
                 {
                     b.Property<Guid>("Id")
@@ -460,6 +613,9 @@ namespace OneZeroErp.Infrastructure.Persistence.Migrations
                     b.Property<string>("BeforeSummary")
                         .HasMaxLength(4000)
                         .HasColumnType("nvarchar(4000)");
+
+                    b.Property<Guid?>("CompanyId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid>("EntityId")
                         .HasColumnType("uniqueidentifier");
@@ -521,6 +677,166 @@ namespace OneZeroErp.Infrastructure.Persistence.Migrations
                     b.ToTable("Erp_LockDate", "erp");
                 });
 
+            modelBuilder.Entity("OneZeroErp.Infrastructure.Persistence.OutboxMessageEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Attempts")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("AuditEventId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset?>("DispatchedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AuditEventId")
+                        .IsUnique();
+
+                    b.HasIndex("DispatchedAtUtc", "CreatedAtUtc");
+
+                    b.ToTable("Platform_Outbox", "platform");
+                });
+
+            modelBuilder.Entity("OneZeroErp.Infrastructure.Persistence.PasswordResetEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("AppUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset?>("ConsumedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset>("ExpiresAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AppUserId");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique();
+
+                    b.ToTable("Identity_PasswordResets", "identity");
+                });
+
+            modelBuilder.Entity("OneZeroErp.Infrastructure.Persistence.RefreshTokenEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset?>("ConsumedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid>("SessionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SessionId");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique();
+
+                    b.ToTable("Identity_RefreshTokens", "identity");
+                });
+
+            modelBuilder.Entity("OneZeroErp.Infrastructure.Persistence.UserSessionEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("AppUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset>("ExpiresAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset?>("RevokedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AppUserId", "ExpiresAtUtc");
+
+                    b.ToTable("Identity_UserSessions", "identity");
+                });
+
+            modelBuilder.Entity("OneZeroErp.Infrastructure.GeneralLedger.GL_ExchangeRateEntity", b =>
+                {
+                    b.HasOne("OneZeroErp.Infrastructure.GeneralLedger.GL_CurrencyEntity", null)
+                        .WithMany()
+                        .HasForeignKey("CurrencyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("OneZeroErp.Infrastructure.GeneralLedger.GL_JournalEntity", b =>
+                {
+                    b.HasOne("OneZeroErp.Infrastructure.GeneralLedger.GL_CurrencyEntity", null)
+                        .WithMany()
+                        .HasForeignKey("CurrencyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("OneZeroErp.Infrastructure.GeneralLedger.Erp_SetupFiscalYearEntity", null)
+                        .WithMany()
+                        .HasForeignKey("FiscalYearId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("OneZeroErp.Infrastructure.GeneralLedger.GL_VoucherTypeEntity", null)
+                        .WithMany()
+                        .HasForeignKey("VoucherTypeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("OneZeroErp.Infrastructure.GeneralLedger.GL_JournalLineEntity", b =>
+                {
+                    b.HasOne("OneZeroErp.Infrastructure.GeneralLedger.GL_ChartOfAccountEntity", null)
+                        .WithMany()
+                        .HasForeignKey("AccountId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("OneZeroErp.Infrastructure.GeneralLedger.GL_JournalEntity", "Journal")
+                        .WithMany("Lines")
+                        .HasForeignKey("JournalId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Journal");
+                });
+
             modelBuilder.Entity("OneZeroErp.Infrastructure.Persistence.AppUserPermissionEntity", b =>
                 {
                     b.HasOne("OneZeroErp.Infrastructure.Persistence.AppUserEntity", "AppUser")
@@ -532,6 +848,15 @@ namespace OneZeroErp.Infrastructure.Persistence.Migrations
                     b.Navigation("AppUser");
                 });
 
+            modelBuilder.Entity("OneZeroErp.Infrastructure.Persistence.AuditDeliveryEntity", b =>
+                {
+                    b.HasOne("OneZeroErp.Infrastructure.Persistence.AuditEventEntity", null)
+                        .WithMany()
+                        .HasForeignKey("AuditEventId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("OneZeroErp.Infrastructure.Persistence.Erp_LockDateEntity", b =>
                 {
                     b.HasOne("OneZeroErp.Infrastructure.GeneralLedger.Erp_SetupFiscalYearEntity", null)
@@ -539,6 +864,47 @@ namespace OneZeroErp.Infrastructure.Persistence.Migrations
                         .HasForeignKey("FiscalYearId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("OneZeroErp.Infrastructure.Persistence.OutboxMessageEntity", b =>
+                {
+                    b.HasOne("OneZeroErp.Infrastructure.Persistence.AuditEventEntity", null)
+                        .WithMany()
+                        .HasForeignKey("AuditEventId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("OneZeroErp.Infrastructure.Persistence.PasswordResetEntity", b =>
+                {
+                    b.HasOne("OneZeroErp.Infrastructure.Persistence.AppUserEntity", null)
+                        .WithMany()
+                        .HasForeignKey("AppUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("OneZeroErp.Infrastructure.Persistence.RefreshTokenEntity", b =>
+                {
+                    b.HasOne("OneZeroErp.Infrastructure.Persistence.UserSessionEntity", null)
+                        .WithMany()
+                        .HasForeignKey("SessionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("OneZeroErp.Infrastructure.Persistence.UserSessionEntity", b =>
+                {
+                    b.HasOne("OneZeroErp.Infrastructure.Persistence.AppUserEntity", null)
+                        .WithMany()
+                        .HasForeignKey("AppUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("OneZeroErp.Infrastructure.GeneralLedger.GL_JournalEntity", b =>
+                {
+                    b.Navigation("Lines");
                 });
 
             modelBuilder.Entity("OneZeroErp.Infrastructure.Persistence.AppUserEntity", b =>

@@ -27,7 +27,10 @@
             <ValidationSummary />
             <div class="form-grid">
                 <label>Code<InputText @bind-Value="EditModel.Code" placeholder="HBL-MAIN" /></label>
-                <label>GL posting account<InputSelect @bind-Value="EditModel.GlAccountId"><option value="@Guid.Empty">Select an Asset posting account</option>@foreach (var account in GlAccountOptions) { <option value="@account.Id">@account.AccountNo — @account.Title</option> }</InputSelect></label>
+                <BsChartOfAccounts Label="GL posting account"
+                                   Items="@GlAccountOptions"
+                                   @bind-Value="EditModel.GlAccountId"
+                                   Placeholder="Select an Asset posting account" />
                 <label>Account name<InputText @bind-Value="EditModel.Name" placeholder="Main operating account" /></label>
                 <label>Bank name<InputText @bind-Value="EditModel.BankName" placeholder="Habib Bank Limited" /></label>
                 <label class="form-grid__full">Bank account number<InputText @bind-Value="EditModel.AccountNumber" placeholder="IBAN or account number" /></label>

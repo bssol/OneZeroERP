@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/OneZeroErp.Api/OneZeroErp.Api.csproj" />
     <Project Path="src/OneZeroErp.Application/OneZeroErp.Application.csproj" />
     <Project Path="src/OneZeroErp.Domain/OneZeroErp.Domain.csproj" />
     <Project Path="src/OneZeroErp.IdentityAccess/OneZeroErp.IdentityAccess.csproj" />
@@ -8,6 +9,7 @@
     <Project Path="src/OneZeroErp.Web/OneZeroErp.Web.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/OneZeroErp.IntegrationTests/OneZeroErp.IntegrationTests.csproj" />
     <Project Path="tests/OneZeroErp.ComponentTests/OneZeroErp.ComponentTests.csproj" />
     <Project Path="tests/OneZeroErp.UnitTests/OneZeroErp.UnitTests.csproj" />
   </Folder>

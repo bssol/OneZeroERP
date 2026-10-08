@@ -1,0 +1,19 @@
+<EntityDropdown TItem="CashAccountListItem" TValue="Guid"
+                Items="@SelectableItems" Value="@Value" ValueChanged="@ValueChanged" ItemSelected="@ItemSelected"
+                ValueSelector="@(item => item.Id)" TextSelector="@(item => $"{item.Code} — {item.Name} · {item.Location}")"
+                Placeholder="@Placeholder" SearchPlaceholder="Search cash account..."
+                SearchAriaLabel="Search cash accounts" AriaLabel="Cash accounts" NoResultsText="No matching cash accounts."
+                Disabled="@Disabled" DebounceMilliseconds="@DebounceMilliseconds" CssClass="@CssClass" />
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<CashAccountListItem> Items { get; set; } = Array.Empty<CashAccountListItem>();
+    [Parameter] public Guid Value { get; set; }
+    [Parameter] public EventCallback<Guid> ValueChanged { get; set; }
+    [Parameter] public EventCallback<CashAccountListItem> ItemSelected { get; set; }
+    [Parameter] public string Placeholder { get; set; } = "Select cash account";
+    [Parameter] public string CssClass { get; set; } = string.Empty;
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public bool IncludeInactive { get; set; }
+    [Parameter] public int DebounceMilliseconds { get; set; } = 250;
+    private IReadOnlyList<CashAccountListItem> SelectableItems => Items.Where(item => IncludeInactive || item.IsActive || item.Id == Value).ToArray();
+}

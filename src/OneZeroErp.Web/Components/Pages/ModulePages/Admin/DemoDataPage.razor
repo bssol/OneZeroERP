@@ -1,0 +1,135 @@
+@page "/admin/demo-data"
+@attribute [Authorize]
+@inject IDemoDataService DemoDataService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@using System.Security.Claims
+@using OneZeroErp.Application.GeneralLedger
+@using OneZeroErp.Application.Identity
+
+<PageTitle>Demo Data · OneZero ERP</PageTitle>
+
+<section class="page-heading">
+    <div>
+        <div class="eyebrow">Administration</div>
+        <h1>Demo data</h1>
+        <p class="page-subtitle">Prepare a repeatable General Ledger walkthrough without posting financial entries.</p>
+    </div>
+</section>
+
+@if (Loading)
+{
+    <section class="panel demo-data-state"><div class="loading-spinner"></div><p>Checking walkthrough data…</p></section>
+}
+else if (!string.IsNullOrWhiteSpace(ErrorMessage))
+{
+    <div class="entity-message entity-message--error" role="alert">@ErrorMessage</div>
+}
+else
+{
+    @if (!string.IsNullOrWhiteSpace(SuccessMessage))
+    {
+        <div class="entity-message entity-message--success" role="status">@SuccessMessage</div>
+    }
+
+    <div class="demo-data-grid">
+        <section class="panel demo-data-summary">
+            <div class="panel-heading">
+                <div><div class="eyebrow">Current state</div><h2>@(Status.IsReady ? "Walkthrough ready" : "Setup incomplete")</h2></div>
+                <span class="status-pill @(Status.IsReady ? "status-pill--open" : "status-pill--closed")">@(Status.IsReady ? "Ready" : "Needs data")</span>
+            </div>
+            <p>The operation only fills missing demo records. Running it again is safe and leaves existing business records unchanged.</p>
+            <div class="demo-data-counts">
+                <span><strong>@Status.FiscalYears</strong> active fiscal year</span>
+                <span><strong>@Status.Accounts / 12</strong> demo accounts</span>
+                <span><strong>@Status.VoucherTypes / 5</strong> voucher types</span>
+                <span><strong>@Status.Currencies / 2</strong> currencies</span>
+                <span><strong>@(Status.BankAccounts + Status.CashAccounts) / 2</strong> bank and cash accounts</span>
+                <span><strong>@Status.TaxConfigurations / 1</strong> tax setup</span>
+                <span><strong>@Status.VoucherDrafts / 3</strong> voucher drafts</span>
+            </div>
+        </section>
+
+        <section class="panel demo-data-contents">
+            <div class="panel-heading"><div><div class="eyebrow">Walkthrough pack</div><h2>What will be available</h2></div></div>
+            <ul>
+                <li>An open fiscal year with unlocked accounting days.</li>
+                <li>A small asset, liability, equity, revenue, and expense chart.</li>
+                <li>Journal, bank, and cash payment and receipt voucher types.</li>
+                <li>Base and foreign currencies, one exchange rate, bank/cash links, and demo sales tax.</li>
+                <li>Three balanced sample vouchers saved with <strong>Draft</strong> status.</li>
+            </ul>
+        </section>
+    </div>
+
+    <section class="panel demo-data-action">
+        <div>
+            <h2>@(Status.IsReady ? "Check and complete data" : "Create walkthrough data")</h2>
+            <p>No journal will be posted and no report balance will change. The action is recorded in the audit trail.</p>
+            <label class="demo-data-confirm"><InputCheckbox @bind-Value="Confirmed" /> I understand that demo records will be added to this company.</label>
+        </div>
+        <button class="button button--primary" type="button" disabled="@(!Confirmed || Seeding)" @onclick="SeedAsync">
+            @(Seeding ? "Creating data…" : Status.IsReady ? "Verify demo data" : "Create demo data")
+        </button>
+    </section>
+}
+
+@code {
+    private DemoDataStatus Status { get; set; } = new(false, 0, 0, 0, 0, 0, 0, 0, 0);
+    private Guid CompanyId;
+    private Guid ActorUserId;
+    private bool Loading = true;
+    private bool Seeding;
+    private bool Confirmed;
+    private string? SuccessMessage;
+    private string? ErrorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var user = (await AuthenticationStateProvider.GetAuthenticationStateAsync()).User;
+        Guid.TryParse(user.FindFirstValue(IdentityClaims.CompanyId), out CompanyId);
+        Guid.TryParse(user.FindFirstValue(ClaimTypes.NameIdentifier), out ActorUserId);
+        try
+        {
+            Status = await DemoDataService.GetStatusAsync(CompanyId, ActorUserId);
+        }
+        catch (UnauthorizedAccessException exception)
+        {
+            ErrorMessage = exception.Message;
+        }
+        catch (Exception exception)
+        {
+            ErrorMessage = exception.GetBaseException().Message;
+        }
+        finally
+        {
+            Loading = false;
+        }
+    }
+
+    private async Task SeedAsync()
+    {
+        Seeding = true;
+        ErrorMessage = null;
+        SuccessMessage = null;
+        try
+        {
+            var result = await DemoDataService.SeedAsync(CompanyId, ActorUserId);
+            Status = result.Status;
+            if (result.Succeeded) SuccessMessage = result.Message;
+            else ErrorMessage = result.Message;
+        }
+        catch (UnauthorizedAccessException exception)
+        {
+            ErrorMessage = exception.Message;
+        }
+        catch (Exception exception)
+        {
+            ErrorMessage = exception.GetBaseException().Message;
+        }
+        finally
+        {
+            Confirmed = false;
+            Seeding = false;
+        }
+    }
+}

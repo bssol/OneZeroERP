@@ -16,6 +16,12 @@
             }
             <div class="nav-section-label">Workspace</div>
             <a class="nav-item" href="/modules/admin" title="Administration"><span>⚙</span><span class="nav-label">Administration</span></a>
+            <AuthorizeView Context="navAuth"><Authorized>
+                @if (navAuth.User.HasClaim("onezero:permission", "identity.users:CanEdit") || navAuth.User.HasClaim("onezero:permission", "*:CanEdit"))
+                {
+                    <a class="nav-item" href="/admin/demo-data" title="Demo data"><span>◇</span><span class="nav-label">Demo data</span></a>
+                }
+            </Authorized></AuthorizeView>
         </nav>
         <div class="sidebar-footer"><span class="status-dot"></span><span class="sidebar-footer-label">All systems operational</span></div>
     </aside>
@@ -27,7 +33,7 @@
             <div class="topbar-actions">
                 <button class="icon-button" aria-label="Notifications">♢<span class="notification-dot"></span></button>
                 <label class="theme-picker">Theme <select aria-label="Select theme" @onchange="ChangeTheme">@foreach (var theme in ThemeService.Themes) { <option value="@theme.Key">@theme.Name</option> }</select></label>
-                <AuthorizeView Context="authState"><Authorized><details class="profile-menu"><summary><UserAvatar ImageUrl="PictureUrl(authState.User)" Initials="@Initials(authState.User)" AriaLabel="Current user profile" /><span class="profile-name">@DisplayName(authState.User)</span></summary><div class="profile-popover"><strong class="profile-display-name">@DisplayName(authState.User)</strong><div class="profile-username">@@@UserName(authState.User)</div><div class="profile-role">@Role(authState.User)</div><form method="post" action="/account/logout"><AntiforgeryToken /><button type="submit" class="logout-button">Sign out</button></form></div></details></Authorized></AuthorizeView>
+                <AuthorizeView Context="authState"><Authorized><details class="profile-menu"><summary><UserAvatar ImageUrl="@PictureUrl(authState.User)" Initials="@Initials(authState.User)" AriaLabel="Current user profile" /><span class="profile-name">@DisplayName(authState.User)</span></summary><div class="profile-popover"><strong class="profile-display-name">@DisplayName(authState.User)</strong><div class="profile-username">@@@UserName(authState.User)</div><div class="profile-role">@Role(authState.User)</div><form method="post" action="/account/logout"><AntiforgeryToken /><button type="submit" class="logout-button">Sign out</button></form></div></details></Authorized></AuthorizeView>
             </div>
         </header>
         <div class="content-wrap">@Body</div>

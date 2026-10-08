@@ -1,5 +1,16 @@
 # OneZero ERP Architecture Proposal
 
+## Bootstrap security/runtime update — 2026-10-06
+
+[ADR 0001](../decisions/0001-bootstrap-completion.md) and the
+[bootstrap runbook](BOOTSTRAP-RUNBOOK.md) supersede historical statements below that
+refresh persistence, transactional outbox, or SQL-backed identity are unimplemented.
+Both hosts now use SQL-backed sessions; JWTs validate issuer/audience and session
+state, browser cookies revalidate identity, audit events enqueue outbox rows in the
+same transaction, and a local idempotent consumer records delivery. Public-asset
+PWA caching excludes financial data, and offline drafts remain disabled. Remaining
+acceptance gates are listed in [BOOTSTRAP-EVIDENCE.md](BOOTSTRAP-EVIDENCE.md).
+
 ## Recommended technology stack
 
 | Concern | Recommendation | Rationale |

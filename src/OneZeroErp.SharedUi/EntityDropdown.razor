@@ -1,0 +1,277 @@
+@typeparam TItem where TItem : class
+@typeparam TValue
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+
+<div @ref="RootElement"
+     class="entity-dropdown @(IsOpen ? "entity-dropdown--open" : string.Empty) @CssClass"
+     @onkeydown="HandleKeyDown">
+    @if (!string.IsNullOrWhiteSpace(Label))
+    {
+        <span id="@LabelId" class="entity-dropdown__label">@Label</span>
+    }
+    <button type="button"
+            class="entity-dropdown__trigger"
+            disabled="@Disabled"
+            aria-haspopup="listbox"
+            aria-expanded="@IsOpen"
+            aria-controls="@ListboxId"
+            aria-label="@(string.IsNullOrWhiteSpace(Label) ? AriaLabel : null)"
+            aria-labelledby="@(!string.IsNullOrWhiteSpace(Label) ? LabelId : null)"
+            @onclick="ToggleAsync">
+        <span class="@(HasSelection ? string.Empty : "entity-dropdown__placeholder")">@SelectedText</span>
+        <span class="entity-dropdown__chevron" aria-hidden="true">⌄</span>
+    </button>
+
+    @if (IsOpen)
+    {
+        <div class="entity-dropdown__panel">
+            <div class="entity-dropdown__search-wrap">
+                <span aria-hidden="true">⌕</span>
+                <input class="entity-dropdown__search"
+                       type="search"
+                       value="@SearchText"
+                       placeholder="@SearchPlaceholder"
+                       autocomplete="off"
+                       aria-label="@SearchAriaLabel"
+                       @oninput="SearchAsync" />
+            </div>
+
+            <div id="@ListboxId" class="entity-dropdown__options" role="listbox" aria-label="@AriaLabel">
+                @if (FilteredItems.Count == 0)
+                {
+                    <div class="entity-dropdown__empty">@NoResultsText</div>
+                }
+                else
+                {
+                    @foreach (var item in FilteredItems)
+                    {
+                        var itemValue = ValueSelector(item);
+                        var selected = EqualityComparer<TValue>.Default.Equals(Value, itemValue);
+                        <button type="button"
+                                class="entity-dropdown__option @(selected ? "entity-dropdown__option--selected" : string.Empty)"
+                                role="option"
+                                aria-selected="@selected"
+                                @key="itemValue"
+                                @onclick="() => SelectAsync(item)">
+                            @HighlightedText(TextSelector(item))
+                            @if (selected)
+                            {
+                                <span class="entity-dropdown__check" aria-hidden="true">✓</span>
+                            }
+                        </button>
+                    }
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private readonly string ListboxId = $"entity-dropdown-{Guid.NewGuid():N}";
+    private readonly string LabelId = $"entity-dropdown-label-{Guid.NewGuid():N}";
+    private IReadOnlyList<TItem> FilteredItems { get; set; } = Array.Empty<TItem>();
+    private CancellationTokenSource? DebounceCancellation;
+    private DotNetObjectReference<EntityDropdown<TItem, TValue>>? DotNetReference;
+    private IJSObjectReference? Module;
+    private ElementReference RootElement;
+    private string SearchText { get; set; } = string.Empty;
+    private string AppliedSearchText { get; set; } = string.Empty;
+    private bool IsOpen { get; set; }
+    private bool OutsideClickRegistered { get; set; }
+
+    [Parameter, EditorRequired] public IReadOnlyList<TItem> Items { get; set; } = Array.Empty<TItem>();
+    [Parameter, EditorRequired] public Func<TItem, TValue> ValueSelector { get; set; } = default!;
+    [Parameter, EditorRequired] public Func<TItem, string> TextSelector { get; set; } = default!;
+    [Parameter] public Func<TItem, string>? SearchTextSelector { get; set; }
+    [Parameter] public TValue Value { get; set; } = default!;
+    [Parameter] public EventCallback<TValue> ValueChanged { get; set; }
+    [Parameter] public EventCallback<TItem> ItemSelected { get; set; }
+    [Parameter] public string? Label { get; set; }
+    [Parameter] public string Placeholder { get; set; } = "Select an item";
+    [Parameter] public string SearchPlaceholder { get; set; } = "Search...";
+    [Parameter] public string SearchAriaLabel { get; set; } = "Search options";
+    [Parameter] public string AriaLabel { get; set; } = "Options";
+    [Parameter] public string NoResultsText { get; set; } = "No matching items.";
+    [Parameter] public string CssClass { get; set; } = string.Empty;
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public int DebounceMilliseconds { get; set; } = 250;
+
+    private TItem? SelectedItem => Items.FirstOrDefault(item =>
+        EqualityComparer<TValue>.Default.Equals(Value, ValueSelector(item)));
+
+    private bool HasSelection => SelectedItem is not null;
+    private string SelectedText => SelectedItem is { } selected ? TextSelector(selected) : Placeholder;
+
+    protected override void OnParametersSet()
+    {
+        ApplyFilter();
+
+        if (Disabled)
+        {
+            IsOpen = false;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (IsOpen && !OutsideClickRegistered)
+        {
+            Module ??= await JS.InvokeAsync<IJSObjectReference>(
+                "import", "./_content/OneZeroErp.SharedUi/EntityDropdown.razor.js");
+            DotNetReference ??= DotNetObjectReference.Create(this);
+            await Module.InvokeVoidAsync("registerOutsideClick", RootElement, DotNetReference);
+            OutsideClickRegistered = true;
+        }
+        else if (!IsOpen && OutsideClickRegistered && Module is not null)
+        {
+            await Module.InvokeVoidAsync("unregisterOutsideClick", RootElement);
+            OutsideClickRegistered = false;
+        }
+    }
+
+    private Task ToggleAsync()
+    {
+        if (Disabled)
+        {
+            return Task.CompletedTask;
+        }
+
+        if (IsOpen)
+        {
+            Close();
+        }
+        else
+        {
+            SearchText = string.Empty;
+            AppliedSearchText = string.Empty;
+            ApplyFilter();
+            IsOpen = true;
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private async Task SearchAsync(ChangeEventArgs args)
+    {
+        SearchText = args.Value?.ToString() ?? string.Empty;
+        DebounceCancellation?.Cancel();
+        DebounceCancellation?.Dispose();
+        DebounceCancellation = new CancellationTokenSource();
+        var cancellationToken = DebounceCancellation.Token;
+
+        try
+        {
+            await Task.Delay(Math.Max(0, DebounceMilliseconds), cancellationToken);
+            AppliedSearchText = SearchText.Trim();
+            ApplyFilter();
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // A newer keystroke superseded this filter operation.
+        }
+    }
+
+    private void ApplyFilter()
+    {
+        if (string.IsNullOrWhiteSpace(AppliedSearchText))
+        {
+            FilteredItems = Items;
+            return;
+        }
+
+        var searchSelector = SearchTextSelector ?? TextSelector;
+        FilteredItems = Items
+            .Where(item => (searchSelector(item) ?? string.Empty)
+                .Contains(AppliedSearchText, StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+    }
+
+    private async Task SelectAsync(TItem item)
+    {
+        var selectedValue = ValueSelector(item);
+        Value = selectedValue;
+        await ValueChanged.InvokeAsync(selectedValue);
+        await ItemSelected.InvokeAsync(item);
+        Close();
+    }
+
+    private void HandleKeyDown(KeyboardEventArgs args)
+    {
+        if (args.Key == "Escape")
+        {
+            Close();
+        }
+    }
+
+    [JSInvokable]
+    public Task CloseFromOutsideAsync()
+    {
+        Close();
+        return InvokeAsync(StateHasChanged);
+    }
+
+    private void Close()
+    {
+        IsOpen = false;
+        DebounceCancellation?.Cancel();
+    }
+
+    private RenderFragment HighlightedText(string? text) => builder =>
+    {
+        text ??= string.Empty;
+
+        if (string.IsNullOrEmpty(AppliedSearchText))
+        {
+            builder.AddContent(0, text);
+            return;
+        }
+
+        var sequence = 0;
+        var start = 0;
+        while (start < text.Length)
+        {
+            var match = text.IndexOf(AppliedSearchText, start, StringComparison.OrdinalIgnoreCase);
+            if (match < 0)
+            {
+                builder.AddContent(sequence++, text[start..]);
+                break;
+            }
+
+            if (match > start)
+            {
+                builder.AddContent(sequence++, text[start..match]);
+            }
+
+            builder.OpenElement(sequence++, "strong");
+            builder.AddContent(sequence++, text.Substring(match, AppliedSearchText.Length));
+            builder.CloseElement();
+            start = match + AppliedSearchText.Length;
+        }
+    };
+
+    public async ValueTask DisposeAsync()
+    {
+        DebounceCancellation?.Cancel();
+        DebounceCancellation?.Dispose();
+
+        try
+        {
+            if (OutsideClickRegistered && Module is not null)
+            {
+                await Module.InvokeVoidAsync("unregisterOutsideClick", RootElement);
+            }
+
+            if (Module is not null)
+            {
+                await Module.DisposeAsync();
+            }
+        }
+        catch (JSDisconnectedException)
+        {
+            // The interactive circuit has already ended.
+        }
+
+        DotNetReference?.Dispose();
+    }
+}

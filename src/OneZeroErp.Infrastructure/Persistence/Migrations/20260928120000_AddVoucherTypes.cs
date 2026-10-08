@@ -1,9 +1,13 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
+using OneZeroErp.Infrastructure.Persistence;
 
 #nullable disable
 
 namespace OneZeroErp.Infrastructure.Persistence.Migrations;
 
+[DbContext(typeof(ErpDbContext))]
 [Migration("20260928120000_AddVoucherTypes")]
 public partial class AddVoucherTypes : Migration
 {

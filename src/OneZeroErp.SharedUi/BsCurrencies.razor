@@ -1,0 +1,19 @@
+<EntityDropdown TItem="CurrencyListItem" TValue="Guid"
+                Items="@SelectableItems" Value="@Value" ValueChanged="@ValueChanged" ItemSelected="@ItemSelected"
+                ValueSelector="@(item => item.Id)" TextSelector="@(item => $"{item.Code} — {item.Name} ({item.Symbol})")"
+                Placeholder="@Placeholder" SearchPlaceholder="Search currency..."
+                SearchAriaLabel="Search currencies" AriaLabel="Currencies" NoResultsText="No matching currencies."
+                Disabled="@Disabled" DebounceMilliseconds="@DebounceMilliseconds" CssClass="@CssClass" />
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<CurrencyListItem> Items { get; set; } = Array.Empty<CurrencyListItem>();
+    [Parameter] public Guid Value { get; set; }
+    [Parameter] public EventCallback<Guid> ValueChanged { get; set; }
+    [Parameter] public EventCallback<CurrencyListItem> ItemSelected { get; set; }
+    [Parameter] public string Placeholder { get; set; } = "Select currency";
+    [Parameter] public string CssClass { get; set; } = string.Empty;
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public bool IncludeInactive { get; set; }
+    [Parameter] public int DebounceMilliseconds { get; set; } = 250;
+    private IReadOnlyList<CurrencyListItem> SelectableItems => Items.Where(item => IncludeInactive || item.IsActive || item.Id == Value).ToArray();
+}

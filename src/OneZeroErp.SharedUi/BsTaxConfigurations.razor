@@ -1,0 +1,19 @@
+<EntityDropdown TItem="TaxConfigurationListItem" TValue="Guid"
+                Items="@SelectableItems" Value="@Value" ValueChanged="@ValueChanged" ItemSelected="@ItemSelected"
+                ValueSelector="@(item => item.Id)" TextSelector="@(item => $"{item.Code} — {item.Name} · {item.TaxType} {item.RatePercent:N2}%")"
+                Placeholder="@Placeholder" SearchPlaceholder="Search tax configuration..."
+                SearchAriaLabel="Search tax configurations" AriaLabel="Tax configurations" NoResultsText="No matching tax configurations."
+                Disabled="@Disabled" DebounceMilliseconds="@DebounceMilliseconds" CssClass="@CssClass" />
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<TaxConfigurationListItem> Items { get; set; } = Array.Empty<TaxConfigurationListItem>();
+    [Parameter] public Guid Value { get; set; }
+    [Parameter] public EventCallback<Guid> ValueChanged { get; set; }
+    [Parameter] public EventCallback<TaxConfigurationListItem> ItemSelected { get; set; }
+    [Parameter] public string Placeholder { get; set; } = "Select tax configuration";
+    [Parameter] public string CssClass { get; set; } = string.Empty;
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public bool IncludeInactive { get; set; }
+    [Parameter] public int DebounceMilliseconds { get; set; } = 250;
+    private IReadOnlyList<TaxConfigurationListItem> SelectableItems => Items.Where(item => IncludeInactive || item.IsActive || item.Id == Value).ToArray();
+}

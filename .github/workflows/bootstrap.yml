@@ -1,0 +1,55 @@
+name: Bootstrap gates
+on:
+  pull_request:
+  push:
+    branches: [main, master]
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - name: Start isolated-test SQL instance
+        shell: pwsh
+        run: |
+          sqllocaldb start MSSQLLocalDB
+          if ($LASTEXITCODE -ne 0) { throw 'LocalDB failed to start.' }
+          dotnet dev-certs https
+          if ($LASTEXITCODE -ne 0) { throw 'HTTPS certificate setup failed.' }
+      - name: Restore with dependency audit
+        shell: pwsh
+        run: |
+          dotnet restore OneZeroErp.slnx -p:NuGetAudit=true -p:NuGetAuditMode=all '-p:WarningsAsErrors=NU1900%3BNU1901%3BNU1902%3BNU1903%3BNU1904'
+          if ($LASTEXITCODE -ne 0) { throw 'Restore or dependency audit failed.' }
+      - name: Check credential configuration
+        shell: pwsh
+        run: ./scripts/check-secrets.ps1
+      - name: Verify formatting of changed C# files
+        shell: pwsh
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: ./scripts/check-format.ps1 -BaseRef $env:BASE_SHA
+      - name: Build and static analysis
+        run: dotnet build OneZeroErp.slnx --no-restore --warnaserror
+      - name: Unit, architecture, SQL, API and browser gates
+        run: dotnet test OneZeroErp.slnx --no-build --no-restore --logger trx --results-directory TestResults
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bootstrap-test-results
+          path: TestResults
+  secret-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

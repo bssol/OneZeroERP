@@ -3,6 +3,9 @@ namespace OneZeroErp.Infrastructure.Persistence;
 public sealed class AppUserEntity
 {
     public Guid Id { get; set; }
+    public Guid CompanyId { get; set; }
+    public int FailedLoginCount { get; set; }
+    public DateTimeOffset? LockedUntilUtc { get; set; }
     public string UserName { get; set; } = string.Empty;
     public string DisplayName { get; set; } = string.Empty;
     public string PasswordHash { get; set; } = string.Empty;

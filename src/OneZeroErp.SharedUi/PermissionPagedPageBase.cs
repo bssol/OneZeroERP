@@ -21,7 +21,7 @@ public abstract class PermissionPagedPageBase<TEntity> : ComponentBase
     protected string? ErrorMessage { get; private set; }
     protected string? SuccessMessage { get; private set; }
     protected bool IsUnauthorized => !Permissions.Allows(PermissionAction.CanView);
-    protected bool IsDeleteConfirmationOpen { get; private set; }
+    protected bool IsDeleteConfirmationOpen { get; private set; } = true;
     protected TEntity? PendingDelete { get; private set; }
     protected bool IsEntityDialogOpen { get; private set; }
     protected TEntity? EditingEntity { get; private set; }
@@ -71,6 +71,7 @@ public abstract class PermissionPagedPageBase<TEntity> : ComponentBase
             {
                 CloseEntityDialog();
                 await RefreshAsync(PageResult?.PageNumber ?? 1);
+                SetActionResult(result);
             }
             return result;
         }

@@ -16,7 +16,7 @@ else if (IsLoading)
 {
     <div class="entity-state" role="status"><span class="loading-spinner"></span><span>Loading records…</span></div>
 }
-else if (!string.IsNullOrWhiteSpace(ErrorMessage))
+else if (!string.IsNullOrWhiteSpace(ErrorMessage) && !IsEntityDialogOpen)
 {
     <div class="entity-state entity-state--error" role="alert"><strong>Unable to load records</strong><span>@ErrorMessage</span><button class="button button--secondary" type="button" @onclick="@(() => RefreshAsync(PageResult?.PageNumber ?? 1))">Try again</button></div>
 }
@@ -42,6 +42,10 @@ else
 }
 
 <EntityDialog Open="@IsEntityDialogOpen" Title="@(EditingEntity is null ? NewEntityTitle : EditEntityTitle)" CssClass="@DialogCssClass" Close="CloseEntityDialog">
+    @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+    {
+        <div class="entity-message entity-message--error" role="alert">@ErrorMessage</div>
+    }
     @if (EditorTemplate is not null)
     {
         @EditorTemplate(Context)

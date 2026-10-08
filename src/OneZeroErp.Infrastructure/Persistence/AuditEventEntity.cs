@@ -3,6 +3,7 @@ namespace OneZeroErp.Infrastructure.Persistence;
 public sealed class AuditEventEntity
 {
     public Guid Id { get; set; }
+    public Guid? CompanyId { get; set; }
     public Guid ActorUserId { get; set; }
     public string Action { get; set; } = string.Empty;
     public string EntityType { get; set; } = string.Empty;

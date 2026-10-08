@@ -11,7 +11,6 @@ public static class ApiEndpointExtensions
     public static IEndpointRouteBuilder MapApiEndpoints(this IEndpointRouteBuilder endpoints)
     {
         var api = endpoints.MapGroup("/api/v1");
-        api.MapAuthEndpoints();
         api.MapFiscalYearEndpoints();
         api.MapChartOfAccountEndpoints();
         return endpoints;

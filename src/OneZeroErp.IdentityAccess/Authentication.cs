@@ -4,6 +4,7 @@ using System.Security.Cryptography;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using OneZeroErp.Application;
+using OneZeroErp.Application.Identity;
 using OneZeroErp.Application.Time;
 
 namespace OneZeroErp.IdentityAccess;
@@ -39,7 +40,7 @@ public sealed class InMemoryAppUserStore(IConfiguration configuration) : IAppUse
 
 public static class PasswordHasher
 {
-    private const int Iterations = 120_000;
+    private const int Iterations = 600_000;
     private const int SaltSize = 16;
     private const int KeySize = 32;
 
@@ -55,9 +56,10 @@ public static class PasswordHasher
         try
         {
             var parts = encoded.Split('$');
-            if (parts.Length != 4 || parts[0] != "v1" || !int.TryParse(parts[1], out var iterations)) return false;
+            if (parts.Length != 4 || parts[0] != "v1" || !int.TryParse(parts[1], out var iterations) || iterations is < 100_000 or > 2_000_000) return false;
             var salt = Convert.FromBase64String(parts[2]);
             var expected = Convert.FromBase64String(parts[3]);
+            if (salt.Length != SaltSize || expected.Length != KeySize) return false;
             var actual = Rfc2898DeriveBytes.Pbkdf2(password, salt, iterations, HashAlgorithmName.SHA256, expected.Length);
             return CryptographicOperations.FixedTimeEquals(actual, expected);
         }
@@ -67,7 +69,7 @@ public static class PasswordHasher
 
 public sealed class JwtTokenService(IConfiguration configuration, IClock clock)
 {
-    public string CreateToken(AppUser user)
+    public string CreateToken(AppUser user, Guid? sessionId = null, Guid? companyId = null)
     {
         var key = configuration["Authentication:SigningKey"];
         if (string.IsNullOrWhiteSpace(key) || key.Length < 32)
@@ -79,9 +81,13 @@ public sealed class JwtTokenService(IConfiguration configuration, IClock clock)
             new Claim(JwtRegisteredClaimNames.UniqueName, user.UserName),
             new Claim(ClaimTypes.Name, user.DisplayName),
             new Claim(ClaimTypes.Role, user.Role)
-        }.Concat((user.Permissions ?? Array.Empty<string>()).Select(permission => new Claim(ClaimPermissionService.PermissionClaimType, permission))).ToArray();
+        }.Concat((user.Permissions ?? Array.Empty<string>()).Select(permission => new Claim(ClaimPermissionService.PermissionClaimType, permission)))
+            .Concat(sessionId.HasValue ? new[] { new Claim(IdentityClaims.SessionId, sessionId.Value.ToString()), new Claim(IdentityClaims.CompanyId, companyId.GetValueOrDefault().ToString()) } : [])
+            .Append(new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())).ToArray();
         var credentials = new SigningCredentials(new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(key)), SecurityAlgorithms.HmacSha256);
-        var token = new JwtSecurityToken(claims: claims, expires: clock.UtcNow.UtcDateTime.AddMinutes(15), signingCredentials: credentials);
+        var token = new JwtSecurityToken(issuer: configuration["Authentication:Issuer"] ?? "OneZeroErp",
+            audience: configuration["Authentication:Audience"] ?? "OneZeroErp.Api", claims: claims,
+            notBefore: clock.UtcNow.UtcDateTime, expires: clock.UtcNow.UtcDateTime.AddMinutes(15), signingCredentials: credentials);
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 }

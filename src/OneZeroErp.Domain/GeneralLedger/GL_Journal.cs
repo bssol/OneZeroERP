@@ -54,7 +54,7 @@ public sealed class Gl_Journal : AuditableEntity
     {
         Id = id;
         VoucherTypeId = voucherTypeId;
-        Number = NormalizeRequired(number, "Journal number", 40);
+        Number = NormalizeRequired(number, "Journal number", 80);
         TransactionDate = transactionDate;
         FiscalYearId = fiscalYearId;
         Description = description?.Trim() ?? string.Empty;

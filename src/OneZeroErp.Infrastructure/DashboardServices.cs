@@ -52,14 +52,15 @@ public sealed class DashboardService(IModuleRegistry moduleRegistry) : IDashboar
 
         return new(
             "General Ledger",
-            "A safe workspace shell for future accounting capabilities. No accounting calculations are implemented yet.",
+            "Set up the ledger and prepare voucher drafts for controlled posting.",
             [
-                new("Fiscal years", "—", "Not implemented", "steady", "slate"),
-                new("Draft journals", "—", "Placeholder", "steady", "slate"),
+                new("Fiscal years", "—", "Manage accounting calendar", "steady", "slate"),
+                new("Voucher drafts", "—", "Open voucher entry", "steady", "slate"),
                 new("Bank reconciliation", "—", "Placeholder", "steady", "slate")
             ],
             [
-                new("Manage fiscal years", "Define the accounting calendar before adding periods and journals.", "/gl/fiscal-years", "blue"),
+                new("Create voucher drafts", "Enter debit and credit lines or use fast payment and receipt entry.", "/gl/vouchers", "blue"),
+                new("Manage fiscal years", "Define the accounting calendar for voucher dates.", "/gl/fiscal-years", "blue"),
                 new("Manage chart of accounts", "Build the account hierarchy used by future journals and reports.", "/gl/chart-of-accounts", "blue"),
                 new("Manage voucher types", "Configure the transaction categories used by journal workflows.", "/gl/voucher-types", "blue"),
                 new("Manage day locks", "Lock accounting dates before controlled journal processing begins.", "/gl/day-locks", "amber"),
@@ -70,7 +71,7 @@ public sealed class DashboardService(IModuleRegistry moduleRegistry) : IDashboar
                 new("Manage tax configuration", "Define reusable tax rates and effective dates.", "/gl/tax-configurations", "amber"),
                 new("Review roadmap", "See the planned GL delivery sequence.", "/modules/gl", "indigo")
             ],
-            [new("GL shell initialized", "Placeholder data only; no journals or reports exist yet.", "Today", "slate")],
+            [new("Voucher draft entry available", "Drafts do not affect financial reports until posting is implemented.", "Today", "blue")],
             ["Posting volume trend — planned", "Trial balance — planned"],
             [module]);
     }

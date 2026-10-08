@@ -1,0 +1,17 @@
+<EntityDropdown TItem="ExchangeRateListItem" TValue="Guid"
+                Items="@Items" Value="@Value" ValueChanged="@ValueChanged" ItemSelected="@ItemSelected"
+                ValueSelector="@(item => item.Id)" TextSelector="@(item => $"{item.CurrencyCode} — {item.CurrencyName} · {item.EffectiveDate:yyyy-MM-dd} · {item.RateToBase:N8}")"
+                Placeholder="@Placeholder" SearchPlaceholder="Search exchange rate..."
+                SearchAriaLabel="Search exchange rates" AriaLabel="Exchange rates" NoResultsText="No matching exchange rates."
+                Disabled="@Disabled" DebounceMilliseconds="@DebounceMilliseconds" CssClass="@CssClass" />
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<ExchangeRateListItem> Items { get; set; } = Array.Empty<ExchangeRateListItem>();
+    [Parameter] public Guid Value { get; set; }
+    [Parameter] public EventCallback<Guid> ValueChanged { get; set; }
+    [Parameter] public EventCallback<ExchangeRateListItem> ItemSelected { get; set; }
+    [Parameter] public string Placeholder { get; set; } = "Select exchange rate";
+    [Parameter] public string CssClass { get; set; } = string.Empty;
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public int DebounceMilliseconds { get; set; } = 250;
+}

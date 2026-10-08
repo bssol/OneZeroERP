@@ -9,3 +9,13 @@ src/OneZeroErp.Web/.keys/
 .codex/
 
 .tools/
+TestResults/
+artifacts/
+*.pfx
+*.p12
+*.pem
+*.key
+*.mdf
+*.ldf
+.env
+**/appsettings.Local.json
